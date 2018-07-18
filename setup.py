@@ -22,9 +22,9 @@ setup(
         'yaslha': [
             'tests/data/*',
         ]},
-    install_requires=['click', 'pyyaml'],
+    install_requires=['click', 'ruamel.yaml'],
     entry_points={
-        'console_scripts': ['pylha-convert=pylha.script:convert']
+        'console_scripts': ['yaslha-convert=yaslha.script:convert']
     },
     tests_require=['nose', 'coverage', 'mypy', 'flake8'],
     test_suite='nose.collector',
