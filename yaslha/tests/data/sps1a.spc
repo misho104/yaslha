@@ -39,7 +39,7 @@ BLOCK SPINFO  # Spectrum calculator information
      2   2.0.5         # version number                    
 #
 BLOCK MODSEL  # Model selection
-     1     1   sugra                                             
+     1     1   #sugra                                             
 #
 BLOCK SMINPUTS  # Standard Model inputs
      1     1.27934000E+02   # alpha_em^-1(M_Z)^MSbar
