@@ -30,6 +30,12 @@ def possible(regexp) -> str:
     return f'(?:{regexp})?'
 
 
+def guess_key_type(value: KeyType) -> KeyType:
+    if isinstance(value, str) and RE_INT.match(value):
+        return int(value)
+    return value
+
+
 def guess_type(value: ValueType) -> ValueType:
     if isinstance(value, str):
         if RE_INT.match(value):
@@ -129,7 +135,7 @@ class InfoLine(AbsLine):
 
 class ValueLine(AbsLine):
     def __init__(self, key: KeyType, value: ValueType, comment: str='')->None:
-        self.key = guess_type(key)
+        self.key = guess_key_type(key)
         self.value = guess_type(value)
         self.comment = comment or ''
 

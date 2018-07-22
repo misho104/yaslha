@@ -73,15 +73,15 @@ class SLHADumper:
         return f'   {obj.value:16.8E}   {len(obj.key):>2}   {ids_str}  # {obj.comment.strip()}'.rstrip()
 
 
-class YAMLDumper(ruamel.yaml.YAML):
+class YAMLDumper:
     def __init__(self, marshal: Optional['yaslha.marshal.Marshal']=None)->None:
-        super().__init__()
         self.marshal = marshal or yaslha.marshal.Marshal()  # type: yaslha.marshal.Marshal
-        self.default_flow_style = None
+        self.yaml = ruamel.yaml.YAML()
+        self.yaml.default_flow_style = None
 
     def dump(self, data: 'yaslha.SLHA'):
         stream = ruamel.yaml.compat.StringIO()
-        super().dump(self.marshal.dump(data), stream)
+        self.yaml.dump(self.marshal.dump(data), stream)
         return stream.getvalue()
 
 
