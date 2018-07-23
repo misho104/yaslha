@@ -30,7 +30,8 @@ class SLHADumper(AbsDumper):
     def dump(self, slha: 'yaslha.SLHA')->str:
         blocks = [self.dump_block(block) for block in slha.blocks.values()]
         decays = [self.dump_decay(decay) for decay in slha.decays.values()]
-        return ''.join(blocks) + ''.join(decays)
+        tail_comment = [v.line for v in slha.tail_comment]
+        return ''.join(blocks) + ''.join(decays) + '\n'.join(tail_comment)
 
     def dump_block(self, block: 'yaslha.Block')->str:
         return '\n'.join([self.dump_line(line, block.name) for line in block.lines()]) + '\n'
@@ -107,22 +108,39 @@ class AbsMarshalDumper(AbsDumper):
                 'SCHEME': self.SCHEME_VERSION
             },
             'BLOCK': dict([(b.name, self.marshal_block(b)) for b in slha.blocks.values()]),
-            'DECAY': dict([(d.pid, self.marshal_decay(d)) for d in slha.decays.values()])
+            'DECAY': dict([(d.pid, self.marshal_decay(d)) for d in slha.decays.values()]),
+            'tail_comment': [v.line for v in slha.tail_comment],
         })
 
     def marshal_block(self, block: 'yaslha.Block')->Mapping[Any, Any]:
-        data = {'info': ['Q=', block.q]} if block.q is not None else {}   # type: MutableMapping[Any, Any]
-        data['values'] = list([self.marshal_line(line) for line in block.value_lines()])
+        data = {'info': None, 'values': None, 'comments': dict()}  # type: MutableMapping[str, Any]
+        if block.q:
+            data['info'] = ['Q=', block.q]
+        for c_pos in yaslha.line.CommentPosition:
+            if block.line_comment(c_pos):
+                data['comments'][c_pos.name] = [v.line for v in block.line_comment(c_pos)]
+        for c_key in block.line_comment_keys():
+            data['comments'][c_key] = [v.line for v in block.line_comment(c_key)]
+
+        data['values'] = list([self.marshal_line(line) for line in block.value_lines(with_comment=False)])
         return _clean(data)
 
     def marshal_decay(self, decay: 'yaslha.Decay')->Mapping[Any, Any]:
-        data = {'info': [decay.width]}  # type: MutableMapping[Any, Any]
-        data['values'] = list([self.marshal_line(line) for line in decay.value_lines()])
+        data = {'info': [decay.width], 'values': None, 'comments': dict()}  # type: MutableMapping[str, Any]
+        for c_pos in yaslha.line.CommentPosition:
+            if decay.line_comment(c_pos):
+                data['comments'][c_pos.name] = [v.line for v in decay.line_comment(c_pos)]
+        for c_key in decay.line_comment_keys():
+            data['comments'][str(c_key)] = [v.line for v in decay.line_comment(c_key)]
+
+        data['values'] = list([self.marshal_line(line) for line in decay.value_lines(with_comment=False)])
         return _clean(data)
 
     def marshal_line(self, line: yaslha.line.AbsLine) -> Any:
         if isinstance(line, yaslha.line.DecayLine):
             return _flatten([line.value, len(line.key), line.key])
+        elif isinstance(line, yaslha.line.CommentLine):
+            pass
         elif line.key is None:
             return [line.value]
         else:

@@ -1,3 +1,4 @@
+import enum
 import re
 from typing import cast, Optional, Union, Tuple, List  # noqa: F401
 
@@ -227,3 +228,12 @@ def parse_string_in_info_block(line: str)->Optional[AbsLine]:
         if obj:
             return obj
     return None
+
+
+class CommentPosition(enum.Enum):
+    Prefix = 'prefix'     # before BLOCK or DECAY line
+    Heading = 'heading'   # after BLOCK or DECAY line
+    Suffix = 'suffix'     # after the block
+
+
+CommentPositionType = Union[CommentPosition, KeyType, ChannelType]

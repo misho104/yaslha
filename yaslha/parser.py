@@ -1,9 +1,9 @@
-from typing import TypeVar, Union  # noqa: F401
+from typing import TypeVar, Union, List  # noqa: F401
 
 import yaslha
 import yaslha.exceptions as exceptions
 import yaslha.line
-
+from yaslha.line import CommentPosition
 
 SLHAParserStatesType = Union[None, 'yaslha.Block', 'yaslha.Decay']
 
@@ -25,6 +25,7 @@ class SLHAParser:
         """Parse SLHA format text."""
 
         processing = None        # type: SLHAParserStatesType
+        comment = list()         # type: List[yaslha.line.CommentLine]
         slha = yaslha.SLHA()
 
         for line in text.splitlines():
@@ -38,14 +39,21 @@ class SLHAParser:
                 # Start a new block
                 processing = yaslha.Block(obj.name, q=obj.q, head_comment=obj.comment)
                 slha.blocks[obj.name] = processing
+                if comment:
+                    processing.set_line_comment(CommentPosition.Prefix, comment)
+                    comment = list()
+
             elif isinstance(obj, yaslha.line.DecayBlockLine):
                 # Start a new decay block
                 processing = yaslha.Decay(obj.pid, width=obj.width)
                 slha.decays[obj.pid] = processing
+                if comment:
+                    processing.set_line_comment(CommentPosition.Prefix, comment)
+                    comment = list()
 
             elif isinstance(obj, yaslha.line.CommentLine):
-                # comment line
-                pass  # TODO: handle comment lines
+                # A comment line, which will be appended to the next object
+                comment.append(obj)
 
             elif obj:
                 # data line
@@ -72,6 +80,20 @@ class SLHAParser:
 
                 else:
                     exceptions.OrphanLineWarning(line).call()
+                    continue
+
+                if comment:
+                    keys_len = len(processing.keys())
+                    if keys_len == 0:
+                        pass  # because obj not added
+                    elif keys_len == 1:
+                        processing.set_line_comment(CommentPosition.Heading, comment)
+                        comment = list()
+                    else:
+                        processing.set_line_comment(obj.key, comment)
+                        comment = list()
             else:
                 exceptions.UnrecognizedLineWarning(line).call()
+        if comment:
+            slha.tail_comment = comment
         return slha
