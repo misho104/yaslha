@@ -16,9 +16,9 @@ def parse(text: str, **kwargs)->SLHA:
 def dump(data: SLHA, output_type=None, dumper=None, **kwargs)->str:
     if dumper is None:
         if output_type.upper() == 'JSON':
-            dumper = yaslha.dumper.JSONDumper()
+            dumper = yaslha.dumper.JSONDumper(**kwargs)
         elif output_type.upper() == 'YAML':
-            dumper = yaslha.dumper.YAMLDumper()
+            dumper = yaslha.dumper.YAMLDumper(**kwargs)
         else:
-            dumper = yaslha.dumper.SLHADumper()
+            dumper = yaslha.dumper.SLHADumper(**kwargs)
     return data.dump(dumper=dumper)

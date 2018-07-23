@@ -7,7 +7,7 @@ import yaslha.exceptions
 
 KeyType = Union[None, int, Tuple[int, int], Tuple[int, int, int]]
 ValueType = Union[int, float, str, List[str]]   # SPINFO/DCINFO 3 and 4 may be multiple
-ChannelType = Tuple[int]
+ChannelType = Tuple[int, ...]
 
 StrFloat = Union[str, float]
 StrInt = Union[str, int]
@@ -93,7 +93,7 @@ class BlockLine(AbsLine):
     IN = 'Block' + SEP + cap(NAME, 'name') + possible(SEP + 'Q=\s*' + cap(FLOAT, 'q')) + TAIL
 
     def __init__(self, name: str, q: Optional[StrFloat]=None, comment: str='')->None:
-        self.name = name
+        self.name = name.upper()
         self.q = float(q) if q is not None else None
         self.comment = comment or ''
 

@@ -63,3 +63,11 @@ class OrphanCommentWarning(DumpWarning):
 
     def __str__(self):
         return f'Removed orphan comment "{self.line}""'
+
+
+class UnrecognizedLineObjectWarning(DumpWarning):
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __str__(self):
+        return f'Ignored an unknown line "{self.obj}""'
