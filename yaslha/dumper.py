@@ -1,13 +1,33 @@
 import json
-from typing import Type, Optional  # noqa: F401
+from typing import Type, Optional, MutableMapping, Any, Mapping, List  # noqa: F401
 import ruamel.yaml
 import yaslha
 import yaslha.line
-import yaslha.marshal
 
 
-class SLHADumper:
-    def dump(self, slha: 'yaslha.SLHA'):
+def _clean(obj: Any)->Any:
+    if isinstance(obj, dict):
+        return {k: _clean(v) for k, v in obj.items() if not (v is None or (hasattr(v, '__len__') and len(v) == 0))}
+    else:
+        return obj
+
+
+def _flatten(obj: List)->List:
+    return [element
+            for item in obj
+            for element in (_flatten(item) if hasattr(item, '__iter__') and not isinstance(item, str) else [item])]
+
+
+class AbsDumper:
+    def __init__(self)->None:
+        pass
+
+    def dump(self, block: 'yaslha.SLHA')->str:
+        return NotImplemented
+
+
+class SLHADumper(AbsDumper):
+    def dump(self, slha: 'yaslha.SLHA')->str:
         blocks = [self.dump_block(block) for block in slha.blocks.values()]
         decays = [self.dump_decay(decay) for decay in slha.decays.values()]
         return ''.join(blocks) + ''.join(decays)
@@ -73,22 +93,58 @@ class SLHADumper:
         return f'   {obj.value:16.8E}   {len(obj.key):>2}   {ids_str}  # {obj.comment.strip()}'.rstrip()
 
 
-class YAMLDumper:
-    def __init__(self, marshal: Optional['yaslha.marshal.Marshal']=None)->None:
-        self.marshal = marshal or yaslha.marshal.Marshal()  # type: yaslha.marshal.Marshal
+class AbsMarshalDumper(AbsDumper):
+    SCHEME_VERSION = 1
+
+    def __init__(self, **kwargs)->None:
+        super().__init__()
+
+    def marshal(self, slha: 'yaslha.SLHA')->Mapping:
+        return _clean({
+            'FORMAT': {
+                'TYPE': 'SLHA',
+                'FORMATTER': f'{yaslha.__pkgname__} {yaslha.__version__}',
+                'SCHEME': self.SCHEME_VERSION
+            },
+            'BLOCK': dict([(b.name, self.marshal_block(b)) for b in slha.blocks.values()]),
+            'DECAY': dict([(d.pid, self.marshal_decay(d)) for d in slha.decays.values()])
+        })
+
+    def marshal_block(self, block: 'yaslha.Block')->Mapping[Any, Any]:
+        data = {'info': ['Q=', block.q]} if block.q is not None else {}   # type: MutableMapping[Any, Any]
+        data['values'] = list([self.marshal_line(line) for line in block.value_lines()])
+        return _clean(data)
+
+    def marshal_decay(self, decay: 'yaslha.Decay')->Mapping[Any, Any]:
+        data = {'info': [decay.width]}  # type: MutableMapping[Any, Any]
+        data['values'] = list([self.marshal_line(line) for line in decay.value_lines()])
+        return _clean(data)
+
+    def marshal_line(self, line: yaslha.line.AbsLine) -> Any:
+        if isinstance(line, yaslha.line.DecayLine):
+            return _flatten([line.value, len(line.key), line.key])
+        elif line.key is None:
+            return [line.value]
+        else:
+            return _flatten([line.key, line.value])
+
+
+class YAMLDumper(AbsMarshalDumper):
+    def __init__(self, **kwargs)->None:
+        super().__init__(**kwargs)
         self.yaml = ruamel.yaml.YAML()
         self.yaml.default_flow_style = None
 
-    def dump(self, data: 'yaslha.SLHA'):
+    def dump(self, data: 'yaslha.SLHA')->str:
         stream = ruamel.yaml.compat.StringIO()
-        self.yaml.dump(self.marshal.dump(data), stream)
+        self.yaml.dump(self.marshal(data), stream)
         return stream.getvalue()
 
 
-class JSONDumper:
-    def __init__(self, marshal: Optional['yaslha.marshal.Marshal']=None)->None:
-        self.marshal = marshal or yaslha.marshal.Marshal()  # type: yaslha.marshal.Marshal
+class JSONDumper(AbsMarshalDumper):
+    def __init__(self, **kwargs)->None:
+        super().__init__(**kwargs)
         self.indent = 2
 
     def dump(self, slha: 'yaslha.SLHA')->str:
-        return json.dumps(self.marshal.dump(slha), indent=self.indent)
+        return json.dumps(self.marshal(slha), indent=self.indent)
