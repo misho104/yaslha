@@ -23,7 +23,7 @@ class CaseInsensitiveChoice(click.Choice):
 
 
 @click.command(help='Convert SLHA from/to YAML and JSON', context_settings=dict(help_option_names=['-h', '--help']))
-# @click.option('--input-type', type=CaseInsensitiveChoice(['Auto'] + ACCEPTED_TYPES), default='Auto', show_default=True)
+# @click.option('--input-type', type=CaseInsensitiveChoice(['Auto'] + ACCEPTED_TYPES), default='Auto',show_default=True)
 @click.option('--input-type', type=CaseInsensitiveChoice(['SLHA']), default='SLHA',
               help='(JSON/YAML input is not yet implemented.)')
 @click.option('--output-type', type=CaseInsensitiveChoice(ACCEPTED_TYPES), default='SLHA', show_default=True)
@@ -39,6 +39,9 @@ class CaseInsensitiveChoice(click.Choice):
 # @click.option('-v', '--verbose', is_flag=True, default=False, help="Show verbose output")
 def convert(**kwargs):
     # TODO: use 'input-type' option
+    # input_type = kwargs['input_type'] or 'Auto'
+    output_type = kwargs['output_type'] or 'SLHA'
+
     if kwargs['input']:
         with open(kwargs['input']) as f:
             input_string = f.read()
@@ -46,7 +49,8 @@ def convert(**kwargs):
         input_string = sys.stdin.read()
     slha = yaslha.parse(input_string)
 
-    output_string = yaslha.dump(data=slha, output_type=kwargs['output_type'])
+    print(output_type)
+    output_string = yaslha.dump(data=slha, output_type=output_type)
 
     if kwargs['output']:
         with open(kwargs['output'], 'w') as f:
