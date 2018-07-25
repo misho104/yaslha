@@ -1,11 +1,11 @@
 import enum
 import re
-from typing import cast, Optional, Union, Tuple, List  # noqa: F401
+from typing import cast, Optional, Union, Tuple, List
 
 import yaslha.exceptions
 
 
-KeyType = Union[None, int, Tuple[int, int], Tuple[int, int, int]]
+KeyType = Union[None, int, Tuple[int, ...]]
 ValueType = Union[int, float, str, List[str]]   # SPINFO/DCINFO 3 and 4 may be multiple
 ChannelType = Tuple[int, ...]
 

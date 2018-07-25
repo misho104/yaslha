@@ -1,4 +1,4 @@
-from typing import TypeVar, Union, List  # noqa: F401
+from typing import Union, List  # noqa: F401
 
 import yaslha
 import yaslha.exceptions as exceptions

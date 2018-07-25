@@ -1,6 +1,5 @@
 from collections import OrderedDict, _OrderedDictItemsView
-from typing import cast, Optional, Union, Tuple, List, Sequence, MutableMapping  # noqa: F401
-import types
+from typing import cast, Optional, Union, List, MutableMapping
 
 import yaslha.line
 from yaslha.line import KeyType, ValueType, ChannelType, CommentPositionType, CommentPosition

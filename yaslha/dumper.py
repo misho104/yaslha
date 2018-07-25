@@ -1,13 +1,13 @@
 import enum
 import json
 import re
-from typing import cast, Type, Optional, MutableMapping, Any, Tuple, Mapping, List  # noqa: F401
+from typing import cast, Optional, MutableMapping, Any, Tuple, Mapping, List  # noqa: F401
 
 import ruamel.yaml
 
 import yaslha
 import yaslha.line
-from yaslha.line import CommentPosition
+from yaslha.line import CommentPosition, KeyType
 import yaslha.exceptions as exceptions
 import yaslha.utility
 from yaslha.utility import _clean, _flatten
@@ -70,7 +70,7 @@ class AbsDumper:
             pids = yaslha.utility.sort_pids_default(pids)
         return [slha.decays[pid] for pid in pids]
 
-    def _block_lines_with_key_order(self, block: 'yaslha.Block')->Tuple[List[yaslha.line.AbsLine], List[yaslha.line.KeyType]]:
+    def _block_lines_with_key_order(self, block: 'yaslha.Block')->Tuple[List[yaslha.line.AbsLine], List[KeyType]]:
         value_lines = block.value_lines(with_comment_lines=self.comments_preserve.keep_line())
 
         keys = list(value_lines.keys())
@@ -81,7 +81,7 @@ class AbsDumper:
         lines = _flatten([cast(yaslha.line.AbsLine, value_lines[key]) for key in keys])
         return lines, keys
 
-    def _decay_lines_with_key_order(self, decay: 'yaslha.Decay')->Tuple[List[yaslha.line.AbsLine], List[yaslha.line.KeyType]]:
+    def _decay_lines_with_key_order(self, decay: 'yaslha.Decay')->Tuple[List[yaslha.line.AbsLine], List[KeyType]]:
         if self.values_order == ValuesOrder.DEFAULT:
             sorted_decay = yaslha.utility.copy_sorted_decay_block(decay, sort_by_br=True)
         elif self.values_order == ValuesOrder.SORTED:
@@ -219,7 +219,7 @@ class AbsMarshalDumper(AbsDumper):
         if block.q:
             data['info'] = ['Q=', block.q]
         if self.comments_preserve.keep_line():
-            for c_pos in yaslha.line.CommentPosition:
+            for c_pos in CommentPosition:
                 if block.line_comment(c_pos):
                     data['comments'][c_pos.name] = [v.line for v in block.line_comment(c_pos)]
         if self.comments_preserve.keep_tail():

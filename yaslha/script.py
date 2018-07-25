@@ -2,7 +2,6 @@ import click
 import enum
 import logging
 import sys
-from typing import KeysView, ValuesView, Dict, Optional  # noqa: F401
 
 import yaslha
 import yaslha.dumper
