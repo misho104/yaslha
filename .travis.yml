@@ -5,18 +5,14 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.7"
-
-branches:
-  only:
-    - master
+    #  - "3.7"
 
 install:
   - python setup.py install
   - pip install nose coverage mypy flake8 coveralls
 
 script:
-  - nosetests --config="" --cover-package=simsusy --with-coverage
+  - nosetests --config="" --cover-package=yaslha --with-coverage
   - mypy --ignore-missing-imports --follow-imports=silent --no-strict-optional .
   - flake8 --max-line-length=120 .
   - coveralls
