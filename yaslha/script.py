@@ -66,8 +66,8 @@ def convert(**kwargs):
 
     output_string = yaslha.dump(data=slha, output_type=output_type,
                                 comments_preserve=yaslha.dumper.CommentsPreserve(kwargs['comments']),
-                                blocks_order=yaslha.dumper.BlocksOrder(kwargs['order']),
-                                values_order=yaslha.dumper.ValuesOrder(kwargs['pid']),
+                                blocks_order=yaslha.dumper.BlocksOrder(kwargs['blocks']),
+                                values_order=yaslha.dumper.ValuesOrder(kwargs['values']),
                                 )
 
     if kwargs['output']:

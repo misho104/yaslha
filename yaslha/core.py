@@ -160,7 +160,7 @@ class Block:
         return self._data.keys()
 
     def items(self):
-        return _OrderedDictItemsView([(k, v.value) for k, v in self._data.items()])
+        return _OrderedDictItemsView(OrderedDict((k, v.value) for k, v in self._data.items()))
 
 
 class PartialWidth:
@@ -300,7 +300,7 @@ class Decay:
         return [v.width for v in self._data.values()]
 
     def items(self):
-        return [(k, v.width) for k, v in self._data.items()]
+        return _OrderedDictItemsView(OrderedDict((k, v.width) for k, v in self._data.items()))
 
     def rename_channel(self, old: ChannelType, new: ChannelType):
         if old not in self or (new != old and new in self):

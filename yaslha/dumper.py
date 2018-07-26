@@ -53,7 +53,7 @@ class AbsDumper:
     def _blocks_sorted(self, slha: 'yaslha.SLHA')->List['yaslha.Block']:
         if self.blocks_order == BlocksOrder.KEEP:
             return slha.blocks.values()
-        block_names = slha.blocks.keys()
+        block_names = list(slha.blocks.keys())
         if self.blocks_order == BlocksOrder.ABC:
             block_names.sort()
         else:
@@ -63,7 +63,7 @@ class AbsDumper:
     def _decays_sorted(self, slha: 'yaslha.SLHA')->List['yaslha.Decay']:
         if self.values_order == ValuesOrder.KEEP:
             return slha.decays.values()
-        pids = slha.decays.keys()
+        pids = list(slha.decays.keys())
         if self.values_order == ValuesOrder.SORTED:
             pids.sort()
         else:
