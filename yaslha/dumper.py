@@ -2,7 +2,7 @@ import enum
 import json
 import re
 from typing import cast, Optional, MutableMapping, Any, Tuple, Mapping, List  # noqa: F401
-
+from collections import OrderedDict
 import ruamel.yaml
 
 import yaslha
@@ -201,19 +201,21 @@ class AbsMarshalDumper(AbsDumper):
         super().__init__(**kwargs)
 
     def marshal(self, slha: 'yaslha.SLHA')->Mapping:
-        return _clean({
-            'FORMAT': {
-                'TYPE': 'SLHA',
-                'FORMATTER': '{} {}'.format(yaslha.__pkgname__, yaslha.__version__),
-                'SCHEME': self.SCHEME_VERSION
-            },
-            'BLOCK': dict([(b.name, self.marshal_block(b)) for b in self._blocks_sorted(slha)]),
-            'DECAY': dict([(d.pid, self.marshal_decay(d)) for d in self._decays_sorted(slha)]),
-            'tail_comment': [v.line for v in slha.tail_comment] if self.comments_preserve.keep_line() else [],
-        })
+        return _clean(OrderedDict([
+            ('FORMAT', OrderedDict([
+                ('TYPE', 'SLHA'),
+                ('FORMATTER', '{} {}'.format(yaslha.__pkgname__, yaslha.__version__)),
+                ('SCHEME', self.SCHEME_VERSION),
+            ])),
+            ('BLOCK', OrderedDict([(b.name, self.marshal_block(b)) for b in self._blocks_sorted(slha)])),
+            ('DECAY', OrderedDict([(d.pid, self.marshal_decay(d)) for d in self._decays_sorted(slha)])),
+            ('tail_comment', [v.line for v in slha.tail_comment] if self.comments_preserve.keep_line() else []),
+        ]))
 
     def marshal_block(self, block: 'yaslha.Block')->Mapping[Any, Any]:
-        data = {'info': None, 'values': None, 'comments': dict()}  # type: MutableMapping[str, Any]
+        data = OrderedDict([('info', None),
+                            ('values', None),
+                            ('comments', OrderedDict())])  # type: MutableMapping[str, Any]
         values, key_order = self._block_lines_with_key_order(block)
         values_without_comment_lines = _flatten([v for v in values if not isinstance(v, yaslha.line.CommentLine)])
         if block.q:
@@ -232,7 +234,9 @@ class AbsMarshalDumper(AbsDumper):
         return _clean(data)
 
     def marshal_decay(self, decay: 'yaslha.Decay')->Mapping[Any, Any]:
-        data = {'info': [decay.width], 'values': None, 'comments': dict()}  # type: MutableMapping[str, Any]
+        data = OrderedDict([('info', [decay.width]),
+                            ('values', None),
+                            ('comments', OrderedDict())])  # type: MutableMapping[str, Any]
         values, key_order = self._decay_lines_with_key_order(decay)
         values_without_comment_lines = _flatten([v for v in values if not isinstance(v, yaslha.line.CommentLine)])
 
@@ -265,6 +269,15 @@ class YAMLDumper(AbsMarshalDumper):
         super().__init__(**kwargs)
         self.yaml = ruamel.yaml.YAML()
         self.yaml.default_flow_style = None
+
+        # we need not it is marked as omap (OrderedDict); it could be just a dict as an output.
+        # (but we may change the mind....)
+        self.yaml.representer.yaml_representers[OrderedDict] = self.yaml.representer.yaml_representers[dict]
+        # # another idea...
+        # def represent_list(self, data):
+        #     flow_style = all(isinstance(i, str) or not hasattr(i, '__iter__') for i in data)
+        #     return self.represent_sequence(u'tag:yaml.org,2002:seq', data, flow_style=flow_style)
+        # self.yaml.representer.yaml_representers[list] = represent_list
 
     def dump(self, data: 'yaslha.SLHA')->str:
         stream = ruamel.yaml.compat.StringIO()

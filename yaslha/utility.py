@@ -1,11 +1,16 @@
+from collections import OrderedDict
 from typing import List, MutableMapping, Any, Tuple  # noqa: F401
 from yaslha.line import KeyType, ChannelType
 import yaslha
 
 
 def _clean(obj: Any)->Any:
-    if isinstance(obj, dict):
-        return {k: _clean(v) for k, v in obj.items() if not (v is None or (hasattr(v, '__len__') and len(v) == 0))}
+    if isinstance(obj, OrderedDict):
+        return OrderedDict((k, _clean(v)) for k, v in obj.items()
+                           if not (v is None or (hasattr(v, '__len__') and len(v) == 0)))
+    elif isinstance(obj, dict):
+        return dict((k, _clean(v)) for k, v in obj.items()
+                    if not (v is None or (hasattr(v, '__len__') and len(v) == 0)))
     else:
         return obj
 
@@ -32,7 +37,7 @@ def sort_blocks_default(block_names: List[str]) -> List[str]:
     """Sort block names according to specified order."""
     result = []
     block_names = [n.upper() for n in block_names]
-    peeked = {k: False for k in block_names}
+    peeked = OrderedDict([(k, False) for k in block_names])
 
     for name in [n.upper() for n in BLOCKS_DEFAULT_ORDER]:
         if name in block_names:

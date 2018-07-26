@@ -1,4 +1,4 @@
-from collections import OrderedDict, _OrderedDictItemsView
+from collections import OrderedDict
 from typing import cast, Optional, Union, List, MutableMapping
 
 import yaslha.line
@@ -160,7 +160,7 @@ class Block:
         return self._data.keys()
 
     def items(self):
-        return _OrderedDictItemsView(OrderedDict((k, v.value) for k, v in self._data.items()))
+        return [(k, v.value) for k, v in self._data.items()]
 
 
 class PartialWidth:

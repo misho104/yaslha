@@ -16,13 +16,17 @@ setup(
     author_email='webmaster@misho-web.com',
     url='https://github.com/misho104/yaslha',
     description='A Python package to convert data files in SLHA and similar formats to Python objects, JSON, or YAML.',
+    python_requires='>=3.4',
     license='MIT',
     packages=['yaslha'],
     package_data={
         'yaslha': [
             'tests/data/*',
         ]},
-    install_requires=['click', 'ruamel.yaml'],
+    install_requires=[
+        'click', 'ruamel.yaml',
+        'typing;python_version<"3.5"',
+    ],
     entry_points={
         'console_scripts': ['yaslha-convert=yaslha.script:convert']
     },
