@@ -15,12 +15,21 @@ __license__ = 'MIT'
 cfg = yaslha.config.read_config()  # type: Mapping[str, Any]
 
 
-def parse(text, **kwargs):
-    # type: (Union[str, pathlib.Path], Any)->SLHA
+def parse(text, input_type='AUTO', parser=None, **kwargs):
+    # type: (Union[str, pathlib.Path], str, Any, Any)->SLHA
     if isinstance(text, pathlib.Path):
         with open(str(text)) as f:
             text = f.read()
-    parser = yaslha.parser.SLHAParser(**kwargs)
+    if parser is None:
+        if input_type.upper() == 'AUTO':
+            # TODO: implement auto-parser
+            parser = yaslha.parser.SLHAParser(**kwargs)
+        elif input_type.upper() == 'JSON':
+            raise NotImplementedError
+        elif input_type.upper() == 'YAML':
+            raise NotImplementedError
+        else:
+            parser = yaslha.parser.SLHAParser(**kwargs)
     return parser.parse(text)
 
 
