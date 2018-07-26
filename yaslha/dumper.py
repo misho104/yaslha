@@ -146,33 +146,33 @@ class SLHADumper(AbsDumper):
         return obj.line
 
     def dump_block_line(self, obj: yaslha.line.BlockLine)->str:
-        q_str = '' if obj.q is None else f'Q={float(obj.q):15.8E}'
-        body = f'Block {obj.name.upper()} {q_str}'
-        return f'{body:23}   # {obj.comment.strip()}'.rstrip()
+        q_str = '' if obj.q is None else 'Q={:15.8E}'.format(float(obj.q))
+        body = 'Block {} {}'.format(obj.name.upper(), q_str)
+        return '{:23}   # {}'.format(body, obj.comment.lstrip()).rstrip()
 
     def dump_info_line(self, obj: yaslha.line.InfoLine, block_name: str)->str:
         lines = list()
         for i, v in enumerate(obj.value):
             c = obj.comment[i] if len(obj.comment) > i else ''
-            lines.append(f' {obj.key:>5}   {v:16}   # {c}'.rstrip())
+            lines.append(' {:>5}   {:16}   # {}'.format(obj.key, v, c).rstrip())
         return '\n'.join(lines)
 
     def dump_value_line(self, obj: yaslha.line.ValueLine, block_name: str)->str:
         if block_name == 'MASS' and isinstance(obj.key, int):
-            return f' {obj.key:>9}   {obj.value:16.8E}   # {obj.comment.strip()}'.rstrip()
+            return ' {:>9}   {:16.8E}   # {}'.format(obj.key, obj.value, obj.comment.lstrip()).rstrip()
 
         if isinstance(obj.key, tuple):
-            key_str = ' '.join([f'{i:>2}' for i in obj.key])
+            key_str = ' '.join(['{:>2}'.format(i) for i in obj.key])
         else:
-            key_str = f'{"" if obj.key is None else obj.key:>5}'
+            key_str = '{:>5}'.format('' if obj.key is None else obj.key)
 
         if isinstance(obj.value, int):
-            value_str = f'{obj.value:>10}      '
+            value_str = '{:>10}      '.format(obj.value)
         elif isinstance(obj.value, float):
-            value_str = f'{obj.value:16.8E}'
+            value_str = '{:16.8E}'.format(obj.value)
         else:
-            value_str = f'{obj.value:<16}'
-        return f' {key_str}   {value_str}   # {obj.comment.strip()}'.rstrip()
+            value_str = '{:<16}'.format(obj.value)
+        return ' {}   {}   # {}'.format(key_str, value_str, obj.comment.lstrip()).rstrip()
 
     def dump_decay(self, decay: 'yaslha.Decay'):
         head = [decay.head_line()]  # type: List[yaslha.line.AbsLine]
@@ -187,11 +187,11 @@ class SLHADumper(AbsDumper):
         return '\n'.join([self.dump_line(obj) for obj in head + body + tail]) + '\n'
 
     def dump_decayblock_line(self, obj: yaslha.line.DecayBlockLine)->str:
-        return f'Decay {obj.pid:>9}   {obj.width:16.8E}   # {obj.comment.strip()}'.rstrip()
+        return 'Decay {:>9}   {:16.8E}   # {}'.format(obj.pid, obj.width, obj.comment.lstrip()).rstrip()
 
     def dump_decay_line(self, obj: yaslha.line.DecayLine)->str:
-        ids_str = ''.join([f'{i:>9} ' for i in obj.key])
-        return f'   {obj.value:16.8E}   {len(obj.key):>2}   {ids_str}  # {obj.comment.strip()}'.rstrip()
+        ids_str = ''.join(['{:>9} '.format(i) for i in obj.key])
+        return '   {:16.8E}   {:>2}   {}  # {}'.format(obj.value, len(obj.key), ids_str, obj.comment.lstrip()).rstrip()
 
 
 class AbsMarshalDumper(AbsDumper):
@@ -204,7 +204,7 @@ class AbsMarshalDumper(AbsDumper):
         return _clean({
             'FORMAT': {
                 'TYPE': 'SLHA',
-                'FORMATTER': f'{yaslha.__pkgname__} {yaslha.__version__}',
+                'FORMATTER': '{} {}'.format(yaslha.__pkgname__, yaslha.__version__),
                 'SCHEME': self.SCHEME_VERSION
             },
             'BLOCK': dict([(b.name, self.marshal_block(b)) for b in self._blocks_sorted(slha)]),

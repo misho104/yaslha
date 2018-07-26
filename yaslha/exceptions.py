@@ -18,7 +18,7 @@ class InvalidInfoBlockError(ParseError):
         self.actual = actual
 
     def __str__(self):
-        return f'INFO block must have (only) one KEY: {self.actual}'
+        return 'INFO block must have (only) one KEY: ' + self.actual
 
 
 class ParseWarning(UserWarning):
@@ -31,7 +31,7 @@ class UnrecognizedLineWarning(ParseWarning):
         self.line = line
 
     def __str__(self):
-        return f'Ignored "{self.line}"'
+        return 'Ignored "{}"'.format(self.line)
 
 
 class OrphanLineWarning(ParseWarning):
@@ -39,7 +39,7 @@ class OrphanLineWarning(ParseWarning):
         self.line = line
 
     def __str__(self):
-        return f'Ignored "{self.line}"'
+        return 'Ignored "{}"'.format(self.line)
 
 
 class InvalidFormatWarning(ParseWarning):
@@ -48,8 +48,8 @@ class InvalidFormatWarning(ParseWarning):
         self.block_title = block_title
 
     def __str__(self):
-        block_info = f'in {self.block_title} ' if self.block_title else ''
-        return f'Ignored {block_info}"{self.line}"'
+        block_info = 'in ' + self.block.title if self.block_title else ''
+        return 'Ignored {}"{}"'.format(block_info, self.line)
 
 
 class DumpWarning(UserWarning):
@@ -62,7 +62,7 @@ class OrphanCommentWarning(DumpWarning):
         self.line = line
 
     def __str__(self):
-        return f'Removed orphan comment "{self.line}""'
+        return 'Removed orphan comment "{}"'.format(self.line)
 
 
 class UnrecognizedLineObjectWarning(DumpWarning):
@@ -70,4 +70,4 @@ class UnrecognizedLineObjectWarning(DumpWarning):
         self.obj = obj
 
     def __str__(self):
-        return f'Ignored an unknown line "{self.obj}""'
+        return 'Ignored an unknown line "{}"'.format(self.obj)

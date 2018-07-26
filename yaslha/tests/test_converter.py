@@ -57,9 +57,9 @@ class TestAbsModelInitialization(unittest.TestCase):
                 for value_order in yaslha.dumper.ValuesOrder:
                     for comment in yaslha.dumper.CommentsPreserve:
                         args = ['--input-type=SLHA', '--output-type=SLHA',
-                                f'--blocks={block_order.name}',
-                                f'--values={value_order.name}',
-                                f'--comments={comment.name}']
+                                '--blocks=' + block_order.name,
+                                '--values=' + value_order.name,
+                                '--comments=' + comment.name]
                         result1 = self.runner.invoke(convert, args + [input_file])
                         result1_output, result1_stderr = check_and_separate_output(result1)
                         result2 = self.runner.invoke(convert, args, input='\n'.join(result1_output))

@@ -65,7 +65,7 @@ class SLHAParser:
                         else:
                             processing[obj.key] = obj
                     else:
-                        exceptions.InvalidFormatWarning(line, f'InfoBlock {processing.name}').call()
+                        exceptions.InvalidFormatWarning(line, 'InfoBlock ' + processing.name).call()
 
                 elif isinstance(processing, yaslha.Block):
                     # fill usual block
@@ -76,7 +76,7 @@ class SLHAParser:
                     if isinstance(obj, yaslha.line.DecayLine):
                         processing[obj.key] = obj
                     else:
-                        exceptions.InvalidFormatWarning(line, f'Decay {processing.pid}').call()
+                        exceptions.InvalidFormatWarning(line, 'Decay {}'.format(processing.pid)).call()
 
                 else:
                     exceptions.OrphanLineWarning(line).call()

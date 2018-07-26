@@ -19,16 +19,16 @@ INFO = r'[^#]+'
 SEP = r'\s+'
 TAIL = r'\s*(?:\#(?P<comment>.*))?'
 
-RE_INT = re.compile(f'^{INT}$', re.IGNORECASE)
-RE_FLOAT = re.compile(f'^{FLOAT}$', re.IGNORECASE)
+RE_INT = re.compile('^' + INT + '$', re.IGNORECASE)
+RE_FLOAT = re.compile('^' + FLOAT + '$', re.IGNORECASE)
 
 
 def cap(regexp: str, name: str) -> str:
-    return f'(?P<{name}>{regexp})'
+    return '(?P<{}>{})'.format(name, regexp)
 
 
 def possible(regexp) -> str:
-    return f'(?:{regexp})?'
+    return '(?:{})?'.format(regexp)
 
 
 def guess_key_type(value: KeyType) -> KeyType:
@@ -59,7 +59,7 @@ class AbsLine:
     def construct(cls, line: str)->Optional['AbsLine']:
         if cls.IN_PATTERN is None:
             # explicitly include ^ and $
-            cls.IN_PATTERN = re.compile(f'^{cls.IN}$', re.IGNORECASE)
+            cls.IN_PATTERN = re.compile('^{}$'.format(cls.IN), re.IGNORECASE)
         match = cls.IN_PATTERN.match(line)
         if match:
             return cls(**match.groupdict())
@@ -108,7 +108,7 @@ class DecayBlockLine(AbsLine):
         self.comment = comment or ''
 
     def __str__(self)->str:
-        return f'DECAY {self.pid:>9}   {self.width:16.8e}   # {self.comment}'.rstrip()
+        return 'DECAY {:>9}   {:16.8e}   # {}'.format(self.pid, self.width, self.comment.lstrip).rstrip()
 
 
 class InfoLine(AbsLine):

@@ -243,7 +243,8 @@ class Decay:
 
     def get_br(self, channel: ChannelType)->float:
         if channel in self._data:
-            return float(f'{self._data[channel].width / self.width:.10g}')
+            # TODO: write a good method to chop after 1+8 digits
+            return float('{:.10g}'.format(self._data[channel].width / self.width))
         else:
             return 0.0
 
