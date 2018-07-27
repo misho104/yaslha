@@ -127,8 +127,14 @@ class InfoLine(AbsLine):
         self.append(value, comment)
 
     def append(self, value: Union[str, List[str]], comment: Union[str, List[str]]='')->None:
-        self.value += value if isinstance(value, list) else [value.strip()]
-        self.comment += comment if isinstance(comment, list) else [(comment or '').strip()]
+        value = value if isinstance(value, list) else [value]
+        comment = comment if isinstance(comment, list) else [comment]
+        for i, v in enumerate(value):
+            self.value.append(v.strip())
+            self.comment.append(comment[i].strip() if i < len(comment) else '')
+        for i in range(len(value), len(comment)):
+            if comment[i]:
+                raise ValueError('comment has more elements than value.')
 
 
 class ValueLine(AbsLine):

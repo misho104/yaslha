@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import copy
 from typing import cast, Optional, Union, List, MutableMapping
 
 import yaslha.dumper
@@ -10,10 +11,16 @@ from yaslha.utility import KeyType, ValueType, ChannelType
 
 
 class SLHA:
-    def __init__(self):
-        self.blocks = OrderedDict()
-        self.decays = OrderedDict()
-        self._tail_comment = list()   # type: List[CommentLine]
+    def __init__(self, obj: Optional['SLHA']=None)->None:
+        if isinstance(obj, SLHA):
+            # copy constructor
+            self.blocks = copy.deepcopy(obj.blocks)  # type: OrderedDict[str, Block]
+            self.decays = copy.deepcopy(obj.decays)  # type: OrderedDict[int, Decay]
+            self._tail_comment = copy.deepcopy(obj._tail_comment)  # type: List[yaslha.line.CommentLine]
+        else:
+            self.blocks = OrderedDict()
+            self.decays = OrderedDict()
+            self._tail_comment = list()
 
     def dump(self, dumper=None)->str:
         if dumper is None:
@@ -31,6 +38,48 @@ class SLHA:
         self._tail_comment = [v if isinstance(v, yaslha.line.CommentLine)
                               else yaslha.line.CommentLine(v)
                               for v in value]
+
+    def get(self, block_name: str, key: KeyType=None, default=None)->Optional[ValueType]:
+        block_name = block_name.upper()
+        if block_name in self.blocks:
+            return self.blocks[block_name].get(key, default=default)
+        else:
+            return default
+
+    def set(self, block_name: str, key: KeyType, value: ValueType, comment: str='')->None:
+        block_name = block_name.upper()
+        if block_name not in self.blocks:
+            self.blocks[block_name] = Block(block_name)
+        self.blocks[block_name].set(key, value, comment)
+
+    def set_info(self, block_name: str, key: int,
+                 value: Union[ValueType, List[ValueType]],
+                 comment: Union[str, List[str]]='')->None:
+        block_name = block_name.upper()
+        if block_name not in self.blocks:
+            self.blocks[block_name] = Block(block_name)
+        value = [str(v) for v in value] if isinstance(value, list) else str(value)
+        self.blocks[block_name][key] = yaslha.line.InfoLine(key, value, comment)
+
+    def append_info(self, block_name: str, key: int, value: ValueType, comment: str=''):
+        block_name = block_name.upper()
+        obj = self.blocks.get(block_name, key)
+        if not isinstance(obj, yaslha.line.InfoLine):
+            raise TypeError('{}-{} is not InfoLine.'.format(block_name, key))
+        obj.append(str(value), comment)
+
+    def br(self, mother: int, *daughters: int)->float:
+        # TODO: we will have a 'NormalizedOrderedDict' to handle with order- (as well as case-) insensitive dict.
+        try:
+            decay = self.decays[mother]
+        except KeyError:
+            return None
+        d = sorted(daughters)
+
+        for k, v in decay.items_br():
+            if sorted(k) == d:
+                return v
+        return 0
 
 
 class Block:
