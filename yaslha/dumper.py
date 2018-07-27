@@ -2,7 +2,7 @@ from collections import OrderedDict
 import enum
 import json
 import re
-from typing import cast, Optional, MutableMapping, Any, Tuple, Mapping, List  # noqa: F401
+from typing import cast, Optional, MutableMapping, Any, Tuple, Mapping, List, Union  # noqa: F401
 
 import ruamel.yaml
 
@@ -97,16 +97,51 @@ class AbsDumper:
 class SLHADumper(AbsDumper):
     TAIL_COMMENTS_RE = re.compile('\#.*')
 
+    @staticmethod
+    def comment_out(line: str)->str:
+        if not line:
+            return '#'
+        elif line.startswith(' '):
+            return line.replace(' ', '#', 1)
+        else:
+            return '#' + line.replace('  ', ' ', 1)
+
+    def __init__(self,
+                 separate_blocks: bool=False,
+                 forbid_last_linebreak: bool=False,
+                 document_blocks: Optional[List[Union[int, str]]]=None,
+                 **kwargs)->None:
+        super().__init__(**kwargs)
+        self.separate_blocks = separate_blocks
+        self.forbid_last_linebreak = forbid_last_linebreak
+        if document_blocks:
+            self.document_blocks = [name.upper() if isinstance(name, str) else name for name in document_blocks]
+        else:
+            self.document_blocks = []  # type: List[Union[int, str]]
+
     def dump(self, slha: 'yaslha.SLHA')->str:
-        blocks = [self.dump_block(block) for block in self._blocks_sorted(slha)]
-        decays = [self.dump_decay(decay) for decay in self._decays_sorted(slha)]
+        blocks = [self.dump_block(block, document_block=(block.name in self.document_blocks))
+                  for block in self._blocks_sorted(slha)]
+        decays = [self.dump_decay(decay, document_block=(decay.pid in self.document_blocks))
+                  for decay in self._decays_sorted(slha)]
         if self.comments_preserve.keep_line():
             tail_comment = [v.line for v in slha.tail_comment]
         else:
             tail_comment = []
-        return ''.join(blocks) + ''.join(decays) + '\n'.join(tail_comment)
 
-    def dump_block(self, block: 'yaslha.Block')->str:
+        blocks = blocks + decays
+        if self.separate_blocks:
+            for i in range(len(blocks)):
+                if i > 0 and not blocks[i].startswith('#\n'):
+                    blocks[i] = '#\n' + blocks[i]
+            if not tail_comment or tail_comment[-1] != '#':
+                tail_comment.append('#')
+        result = ''.join(blocks) + '\n'.join(tail_comment) + '\n'
+        if self.forbid_last_linebreak:
+            result = result.rstrip()
+        return result
+
+    def dump_block(self, block: 'yaslha.Block', document_block: bool=False)->str:
         head = [block.head_line()]  # type: List[yaslha.line.AbsLine]
         body, key_order = self._block_lines_with_key_order(block)
         tail = []                   # type: List[yaslha.line.AbsLine]
@@ -116,7 +151,10 @@ class SLHADumper(AbsDumper):
             head = pre_comment + head + head_comment
             tail = cast(List[yaslha.line.AbsLine], block.line_comment(CommentPosition.Suffix))
 
-        return '\n'.join(_clean([self.dump_line(obj, block_name=block.name) for obj in head + body + tail])) + '\n'
+        lines = _clean([self.dump_line(obj, block_name=block.name) for obj in head + body + tail])
+        if document_block:
+            lines = [self.comment_out(line) for line in lines]
+        return '\n'.join(lines) + '\n'
 
     def dump_line(self, obj: yaslha.line.AbsLine, block_name: Optional[str]=None):
         # TODO: rewrite using singledispatcher
@@ -176,7 +214,7 @@ class SLHADumper(AbsDumper):
             value_str = '{:<16}'.format(obj.value)
         return ' {}   {}   # {}'.format(key_str, value_str, obj.comment.lstrip()).rstrip()
 
-    def dump_decay(self, decay: 'yaslha.Decay'):
+    def dump_decay(self, decay: 'yaslha.Decay', document_block: bool = False):
         head = [decay.head_line()]  # type: List[yaslha.line.AbsLine]
         body, key_order = self._decay_lines_with_key_order(decay)
         tail = []                   # type: List[yaslha.line.AbsLine]
@@ -186,7 +224,10 @@ class SLHADumper(AbsDumper):
             head = pre_comment + head + head_comment
             tail = cast(List[yaslha.line.AbsLine], decay.line_comment(CommentPosition.Suffix))
 
-        return '\n'.join(_clean([self.dump_line(obj) for obj in head + body + tail])) + '\n'
+        lines = _clean([self.dump_line(obj) for obj in head + body + tail])
+        if document_block:
+            lines = [self.comment_out(line) for line in lines]
+        return '\n'.join(lines) + '\n'
 
     def dump_decayblock_line(self, obj: yaslha.line.DecayBlockLine)->str:
         return 'Decay {:>9}   {:16.8E}   # {}'.format(obj.pid, obj.width, obj.comment.lstrip()).rstrip()
