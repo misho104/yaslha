@@ -1,10 +1,12 @@
-import click
 import enum
 import logging
 import sys
 
+import click
+
 import yaslha
 import yaslha.dumper
+
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)

@@ -1,13 +1,10 @@
 import enum
 import re
-from typing import cast, Optional, Union, Tuple, List
+from typing import cast, Optional, Union, List
 
 import yaslha.exceptions
+from yaslha.utility import KeyType, ValueType, ChannelType
 
-
-KeyType = Union[None, int, Tuple[int, ...]]
-ValueType = Union[int, float, str, List[str]]   # SPINFO/DCINFO 3 and 4 may be multiple
-ChannelType = Tuple[int, ...]
 
 StrFloat = Union[str, float]
 StrInt = Union[str, int]

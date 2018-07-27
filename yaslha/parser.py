@@ -5,6 +5,7 @@ import yaslha.exceptions as exceptions
 import yaslha.line
 from yaslha.line import CommentPosition
 
+
 SLHAParserStatesType = Union[None, 'yaslha.Block', 'yaslha.Decay']
 
 

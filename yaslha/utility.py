@@ -1,7 +1,12 @@
 from collections import OrderedDict
 from typing import List, MutableMapping, Any, Tuple, TypeVar, Union  # noqa: F401
-from yaslha.line import KeyType, ChannelType
+
 import yaslha
+
+
+KeyType = Union[None, int, Tuple[int, ...]]
+ValueType = Union[int, float, str, List[str]]   # SPINFO/DCINFO 3 and 4 may be multiple
+ChannelType = Tuple[int, ...]
 
 
 def _clean(obj: Any)->Any:

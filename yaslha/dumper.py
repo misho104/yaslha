@@ -1,16 +1,17 @@
+from collections import OrderedDict
 import enum
 import json
 import re
 from typing import cast, Optional, MutableMapping, Any, Tuple, Mapping, List  # noqa: F401
-from collections import OrderedDict
+
 import ruamel.yaml
 
 import yaslha
-import yaslha.line
-from yaslha.line import CommentPosition, KeyType
 import yaslha.exceptions as exceptions
+import yaslha.line
 import yaslha.utility
-from yaslha.utility import _clean, _flatten
+from yaslha.line import CommentPosition
+from yaslha.utility import _clean, _flatten, KeyType
 
 
 class BlocksOrder(enum.Enum):

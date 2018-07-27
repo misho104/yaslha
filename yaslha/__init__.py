@@ -1,8 +1,10 @@
 import pathlib
 from typing import Union
-from yaslha.core import SLHA, Block, Decay  # noqa: F401
+
 import yaslha.parser
 import yaslha.dumper
+from yaslha.core import SLHA, Block, Decay  # noqa: F401
+
 
 __pkgname__ = 'yaslha'
 __version__ = '0.0.3'

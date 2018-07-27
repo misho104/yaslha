@@ -1,11 +1,12 @@
 from collections import OrderedDict
 from typing import cast, Optional, Union, List, MutableMapping
 
-import yaslha.line
-from yaslha.line import KeyType, ValueType, ChannelType, CommentPositionType, CommentPosition
 import yaslha.dumper
-import yaslha.parser
 import yaslha.exceptions as exceptions
+import yaslha.line
+import yaslha.parser
+from yaslha.line import CommentPositionType, CommentPosition
+from yaslha.utility import KeyType, ValueType, ChannelType
 
 
 class SLHA:
