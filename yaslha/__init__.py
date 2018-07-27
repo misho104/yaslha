@@ -38,7 +38,5 @@ def parse_file(path: Union[str, pathlib.Path], **kwargs)->SLHA:
 
 
 def dump_file(data: SLHA, path: Union[str, pathlib.Path], **kwargs)->None:
-    if isinstance(path, str):
-        path = pathlib.Path(path)
     with open(str(path), 'w') as f:
         f.write(dump(data, **kwargs))

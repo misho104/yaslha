@@ -116,7 +116,7 @@ class SLHADumper(AbsDumper):
             head = pre_comment + head + head_comment
             tail = cast(List[yaslha.line.AbsLine], block.line_comment(CommentPosition.Suffix))
 
-        return '\n'.join([self.dump_line(obj, block_name=block.name) for obj in head + body + tail]) + '\n'
+        return '\n'.join(_clean([self.dump_line(obj, block_name=block.name) for obj in head + body + tail])) + '\n'
 
     def dump_line(self, obj: yaslha.line.AbsLine, block_name: Optional[str]=None):
         # TODO: rewrite using singledispatcher
@@ -186,7 +186,7 @@ class SLHADumper(AbsDumper):
             head = pre_comment + head + head_comment
             tail = cast(List[yaslha.line.AbsLine], decay.line_comment(CommentPosition.Suffix))
 
-        return '\n'.join([self.dump_line(obj) for obj in head + body + tail]) + '\n'
+        return '\n'.join(_clean([self.dump_line(obj) for obj in head + body + tail])) + '\n'
 
     def dump_decayblock_line(self, obj: yaslha.line.DecayBlockLine)->str:
         return 'Decay {:>9}   {:16.8E}   # {}'.format(obj.pid, obj.width, obj.comment.lstrip()).rstrip()

@@ -22,6 +22,8 @@ def _clean(obj: Any)->Any:
     elif isinstance(obj, dict):
         return dict((k, _clean(v)) for k, v in obj.items()
                     if not (v is None or (hasattr(v, '__len__') and len(v) == 0)))
+    elif isinstance(obj, list):
+        return list(v for v in obj if not (v is None or (hasattr(v, '__len__') and len(v) == 0)))
     else:
         return obj
 
