@@ -1,3 +1,5 @@
+import pathlib
+from typing import Union
 from yaslha.core import SLHA, Block, Decay  # noqa: F401
 import yaslha.parser
 import yaslha.dumper
@@ -8,7 +10,10 @@ __author__ = 'Sho Iwamoto / Misho'
 __license__ = 'MIT'
 
 
-def parse(text: str, **kwargs)->SLHA:
+def parse(text: Union[str, pathlib.Path], **kwargs)->SLHA:
+    if isinstance(text, pathlib.Path):
+        with open(str(text)) as f:
+            text = f.read()
     parser = yaslha.parser.SLHAParser(**kwargs)
     return parser.parse(text)
 
@@ -22,3 +27,16 @@ def dump(data: SLHA, output_type=None, dumper=None, **kwargs)->str:
         else:
             dumper = yaslha.dumper.SLHADumper(**kwargs)
     return data.dump(dumper=dumper)
+
+
+def parse_file(path: Union[str, pathlib.Path], **kwargs)->SLHA:
+    if isinstance(path, str):
+        path = pathlib.Path(path)
+    return parse(path, **kwargs)
+
+
+def dump_file(data: SLHA, path: Union[str, pathlib.Path], **kwargs)->None:
+    if isinstance(path, str):
+        path = pathlib.Path(path)
+    with open(str(path), 'w') as f:
+        f.write(dump(data, **kwargs))
