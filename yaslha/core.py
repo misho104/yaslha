@@ -103,22 +103,22 @@ class Block:
             del self._comment_lines[position]
 
     # getter
-    def __getitem__(self, key: KeyType)->ValueType:
+    def __getitem__(self, key: KeyType=None)->ValueType:
         return self._data[key].value
 
-    def get(self, key: KeyType, default=None):
+    def get(self, key: KeyType=None, default=None):
         if key in self._data:
             return self._data[key].value
         else:
             return default
 
-    def get_line_obj(self, key: KeyType, default=None):
+    def get_line_obj(self, key: KeyType=None, default=None):
         if key in self._data:
             return self._data[key]
         else:
             return default
 
-    def comment(self, key: KeyType, default: Optional[str]=None):
+    def comment(self, key: KeyType=None, default: Optional[str]=None):
         if key in self._data or default is None:
             return self._data[key].comment
         else:
