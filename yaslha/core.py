@@ -220,7 +220,7 @@ class PartialWidth:
 
 
 class Decay:
-    def __init__(self, pid: Union[int, 'Decay'], width: Optional[float]=None, head_comment: str='')->None:
+    def __init__(self, pid: Union[int, 'Decay'], width: float=0., head_comment: str='')->None:
         if isinstance(pid, int):
             # normal constructor
             self.pid = pid              # type: int
