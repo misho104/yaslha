@@ -3,7 +3,7 @@ import yaslha.parser
 import yaslha.dumper
 
 __pkgname__ = 'yaslha'
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 __author__ = 'Sho Iwamoto / Misho'
 __license__ = 'MIT'
 
