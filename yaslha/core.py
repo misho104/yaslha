@@ -301,8 +301,11 @@ class Decay:
     def values(self):
         return [v.width for v in self._data.values()]
 
-    def items(self):
+    def items_width(self):
         return [(k, v.width) for k, v in self._data.items()]
+
+    def items_br(self):
+        return [(k, v.width / self.width) for k, v in self._data.items()]
 
     def rename_channel(self, old: ChannelType, new: ChannelType):
         if old not in self or (new != old and new in self):

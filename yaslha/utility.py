@@ -102,7 +102,7 @@ def copy_sorted_decay_block(decay: 'yaslha.Decay', sort_by_br=True)->'yaslha.Dec
     def sort_key(ch: ChannelType)->List[int]:
         return _flatten([len(ch), [ordering(pid) for pid in ch]])
 
-    ch_mapping = [(ch, ch_sorted(ch), br) for ch, br in decay.items()]
+    ch_mapping = [(ch, ch_sorted(ch), br) for ch, br in decay.items_br()]
     if sort_by_br:
         tmp = sorted(ch_mapping, key=lambda x: x[2], reverse=True)
         # group similar br (to absorb difference in float-precision)
