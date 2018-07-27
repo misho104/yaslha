@@ -11,7 +11,7 @@ import yaslha.exceptions as exceptions
 import yaslha.line
 import yaslha.utility
 from yaslha.line import CommentPosition
-from yaslha.utility import _clean, _flatten, KeyType
+from yaslha.utility import _float, _clean, _flatten, KeyType
 
 
 class BlocksOrder(enum.Enum):
@@ -148,7 +148,7 @@ class SLHADumper(AbsDumper):
         return obj.line
 
     def dump_block_line(self, obj: yaslha.line.BlockLine)->str:
-        q_str = '' if obj.q is None else 'Q={:15.8E}'.format(float(obj.q))
+        q_str = '' if obj.q is None else 'Q={:15.8E}'.format(_float(obj.q))
         body = 'Block {} {}'.format(obj.name.upper(), q_str)
         return '{:23}   # {}'.format(body, obj.comment.lstrip()).rstrip()
 

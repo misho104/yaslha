@@ -3,7 +3,7 @@ import re
 from typing import cast, Optional, Union, List
 
 import yaslha.exceptions
-from yaslha.utility import KeyType, ValueType, ChannelType
+from yaslha.utility import _float, KeyType, ValueType, ChannelType
 
 
 StrFloat = Union[str, float]
@@ -39,7 +39,7 @@ def guess_type(value: ValueType) -> ValueType:
         if RE_INT.match(value):
             return int(value)
         elif RE_FLOAT.match(value):
-            return float(value)
+            return _float(value)
     return value
 
 
@@ -91,7 +91,7 @@ class BlockLine(AbsLine):
 
     def __init__(self, name: str, q: Optional[StrFloat]=None, comment: str='')->None:
         self.name = name.upper()
-        self.q = float(q) if q is not None else None
+        self.q = _float(q) if q is not None else None
         self.comment = comment or ''
 
 
@@ -101,7 +101,7 @@ class DecayBlockLine(AbsLine):
 
     def __init__(self, pid: StrInt, width: StrFloat, comment: str='')->None:
         self.pid = int(pid)
-        self.width = float(width)
+        self.width = _float(width)
         self.comment = comment or ''
 
     def __str__(self)->str:
@@ -192,7 +192,7 @@ class DecayLine(ValueLine):
             self.key = tuple(int(pid) for pid in re.split(r'\s+', daughters.strip()))
         else:
             self.key = channel
-        self.value = float(br)
+        self.value = _float(br)
         self.comment = comment or ''
 
 

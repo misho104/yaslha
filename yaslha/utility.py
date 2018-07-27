@@ -9,6 +9,12 @@ ValueType = Union[int, float, str, List[str]]   # SPINFO/DCINFO 3 and 4 may be m
 ChannelType = Tuple[int, ...]
 
 
+def _float(obj: Any)->float:
+    if isinstance(obj, str):
+        obj = obj.replace('d', 'e').replace('D', 'E')
+    return float(obj)
+
+
 def _clean(obj: Any)->Any:
     if isinstance(obj, OrderedDict):
         return OrderedDict((k, _clean(v)) for k, v in obj.items()
