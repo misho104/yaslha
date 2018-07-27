@@ -52,7 +52,7 @@ class AbsDumper:
 
     def _blocks_sorted(self, slha: 'yaslha.SLHA')->List['yaslha.Block']:
         if self.blocks_order == BlocksOrder.KEEP:
-            return slha.blocks.values()
+            return list(slha.blocks.values())
         block_names = list(slha.blocks.keys())
         if self.blocks_order == BlocksOrder.ABC:
             block_names.sort()
@@ -62,7 +62,7 @@ class AbsDumper:
 
     def _decays_sorted(self, slha: 'yaslha.SLHA')->List['yaslha.Decay']:
         if self.values_order == ValuesOrder.KEEP:
-            return slha.decays.values()
+            return list(slha.decays.values())
         pids = list(slha.decays.keys())
         if self.values_order == ValuesOrder.SORTED:
             pids.sort()
@@ -75,7 +75,8 @@ class AbsDumper:
 
         keys = list(value_lines.keys())
         if self.values_order == ValuesOrder.DEFAULT and block.name == 'MASS':
-            keys = yaslha.utility.sort_pids_default(keys)
+            keys_ = yaslha.utility.sort_pids_default(keys)  # to suppress strange mypy complaint
+            keys = keys_
         elif self.values_order != ValuesOrder.KEEP:
             keys.sort()
         lines = _flatten([cast(yaslha.line.AbsLine, value_lines[key]) for key in keys])

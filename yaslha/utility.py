@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import List, MutableMapping, Any, Tuple  # noqa: F401
+from typing import List, MutableMapping, Any, Tuple, TypeVar, Union  # noqa: F401
 from yaslha.line import KeyType, ChannelType
 import yaslha
 
@@ -50,9 +50,12 @@ def sort_blocks_default(block_names: List[str]) -> List[str]:
 PID_GROUPS = ['sm', 'gluino', 'sq-up', 'sq-down', 'neut', 'char', 'slep', 'snu', 'susy', 'others', 'not_int']
 
 
-def sort_pids_default(pids: List[KeyType]) -> List[KeyType]:
+T = TypeVar('T', bound=KeyType)
+
+
+def sort_pids_default(pids: List[T]) -> List[Union[T, int]]:
     """Sort block names according to specified order."""
-    tmp = dict((key, []) for key in PID_GROUPS)  # type: MutableMapping[str, List[KeyType]]
+    tmp = dict((key, []) for key in PID_GROUPS)  # type: MutableMapping[str, List[Union[T, int]]]
 
     for i in pids:
         if not isinstance(i, int):
