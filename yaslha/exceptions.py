@@ -48,7 +48,7 @@ class InvalidFormatWarning(ParseWarning):
         self.block_title = block_title
 
     def __str__(self):
-        block_info = 'in ' + self.block.title if self.block_title else ''
+        block_info = 'in ' + self.block_title if self.block_title else ''
         return 'Ignored {}"{}"'.format(block_info, self.line)
 
 
