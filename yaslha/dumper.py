@@ -146,29 +146,28 @@ class SLHADumper(AbsDumper):
         blocks = blocks + decays
         if self.separate_blocks:
             for i in range(len(blocks)):
-                if i > 0 and not blocks[i].startswith('#\n'):
-                    blocks[i] = '#\n' + blocks[i]
+                if i > 0 and blocks[i][0] != '#':
+                    blocks[i].insert(0, '#')
             if not tail_comment or tail_comment[-1] != '#':
                 tail_comment.append('#')
 
-        version_string_old = '# written by {}'.format(yaslha.__pkgname__)
-        version_string_new = '# written by {} {}\n'.format(yaslha.__pkgname__, yaslha.__version__)
-        for i in range(len(blocks)):
-            if blocks[i].startswith(version_string_old):
-                blocks[i] = version_string_new if self.write_version else ''
-                version_string_new = None
-                break
-        if self.write_version and version_string_new:
-            blocks.insert(0, version_string_new)
+        lines = _flatten(blocks)
 
-        result = ''.join(blocks) + '\n'.join(tail_comment) + '\n'
+        version_string_old = '# written by {}'.format(yaslha.__pkgname__)
+        for i in range(len(lines)):
+            if lines[i].startswith(version_string_old):
+                lines[i] = ''
+        if self.write_version:
+            lines.insert(0, '# written by {} {}'.format(yaslha.__pkgname__, yaslha.__version__))
+
+        result = '\n'.join(_clean(lines)) + '\n'
 
         if self.forbid_last_linebreak:
             result = result.rstrip()
 
         return result
 
-    def dump_block(self, block: 'yaslha.Block', document_block: bool=False)->str:
+    def dump_block(self, block: 'yaslha.Block', document_block: bool=False)->List[str]:
         head = [block.head_line()]  # type: List[yaslha.line.AbsLine]
         body, key_order = self._block_lines_with_key_order(block)
         tail = []                   # type: List[yaslha.line.AbsLine]
@@ -178,12 +177,12 @@ class SLHADumper(AbsDumper):
             head = pre_comment + head + head_comment
             tail = cast(List[yaslha.line.AbsLine], block.line_comment(CommentPosition.Suffix))
 
-        lines = _clean([self.dump_line(obj, block_name=block.name) for obj in head + body + tail])
+        lines = _clean(_flatten([self.dump_line(obj, block_name=block.name) for obj in head + body + tail]))
         if document_block:
             lines = [self.comment_out(line) for line in lines]
-        return '\n'.join(lines) + '\n'
+        return lines
 
-    def dump_line(self, obj: yaslha.line.AbsLine, block_name: Optional[str]=None):
+    def dump_line(self, obj: yaslha.line.AbsLine, block_name: Optional[str]=None)->Union[str, List[str]]:
         # TODO: rewrite using singledispatcher
         if isinstance(obj, yaslha.line.CommentLine):
             if self.comments_preserve.keep_line():
@@ -191,7 +190,7 @@ class SLHADumper(AbsDumper):
             else:
                 return ''
         if isinstance(obj, yaslha.line.BlockLine):
-            line = self.dump_block_line(obj)
+            line = self.dump_block_line(obj)  # type: Union[str, List[str]]
         elif isinstance(obj, yaslha.line.DecayBlockLine):
             line = self.dump_decayblock_line(obj)
         elif isinstance(obj, yaslha.line.DecayLine):
@@ -207,7 +206,10 @@ class SLHADumper(AbsDumper):
         if self.comments_preserve.keep_tail():
             return line
         else:
-            return self.TAIL_COMMENTS_RE.sub('#', line)
+            if isinstance(line, str):
+                return self.TAIL_COMMENTS_RE.sub('#', line)
+            else:
+                return [self.TAIL_COMMENTS_RE.sub('#', i) for i in line]
 
     def dump_comment_line(self, obj: yaslha.line.CommentLine)->str:
         return obj.line
@@ -217,12 +219,12 @@ class SLHADumper(AbsDumper):
         body = '{} {} {}'.format(self.block_str, obj.name.upper(), q_str)
         return '{:23}   # {}'.format(body, obj.comment.lstrip()).rstrip()
 
-    def dump_info_line(self, obj: yaslha.line.InfoLine, block_name: str)->str:
+    def dump_info_line(self, obj: yaslha.line.InfoLine, block_name: str)->List[str]:
         lines = list()
         for i, v in enumerate(obj.value):
             c = obj.comment[i] if len(obj.comment) > i else ''
             lines.append(' {:>5}   {:16}   # {}'.format(obj.key, v, c).rstrip())
-        return '\n'.join(lines)
+        return lines
 
     def dump_value_line(self, obj: yaslha.line.ValueLine, block_name: str)->str:
         if block_name == 'MASS' and isinstance(obj.key, int):
@@ -241,7 +243,7 @@ class SLHADumper(AbsDumper):
             value_str = '{:<16}'.format(obj.value)
         return ' {}   {}   # {}'.format(key_str, value_str, obj.comment.lstrip()).rstrip()
 
-    def dump_decay(self, decay: 'yaslha.Decay', document_block: bool = False):
+    def dump_decay(self, decay: 'yaslha.Decay', document_block: bool=False)->List[str]:
         head = [decay.head_line()]  # type: List[yaslha.line.AbsLine]
         body, key_order = self._decay_lines_with_key_order(decay)
         tail = []                   # type: List[yaslha.line.AbsLine]
@@ -254,7 +256,7 @@ class SLHADumper(AbsDumper):
         lines = _clean([self.dump_line(obj) for obj in head + body + tail])
         if document_block:
             lines = [self.comment_out(line) for line in lines]
-        return '\n'.join(lines) + '\n'
+        return lines
 
     def dump_decayblock_line(self, obj: yaslha.line.DecayBlockLine)->str:
         return '{} {:>9}   {}   # {}'.format(
