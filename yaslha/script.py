@@ -11,8 +11,8 @@ import yaslha.dumper
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
-__pkgname__ = 'pylha/convert'
-__version__ = '0.3'            # TODO: import from, e.g., __init__.py
+__scriptname__ = yaslha.__pkgname__ + '/converter'
+__version__ = yaslha.__version__
 
 ACCEPTED_TYPES = ['SLHA', 'YAML', 'JSON']  # decided to use capital letters
 
@@ -52,7 +52,7 @@ class CaseInsensitiveChoice(click.Choice):
               help='Order of SLHA blocks')
 @click.option('--values', type=CaseInsensitiveChoice(yaslha.dumper.ValuesOrder), default='DEFAULT',
               help='Order of values')
-@click.version_option(__version__, '-V', '--version', prog_name=__pkgname__)
+@click.version_option(__version__, '-V', '--version', prog_name=__scriptname__)
 # @click.option('-v', '--verbose', is_flag=True, default=False, help="Show verbose output")
 def convert(**kwargs):
     # TODO: use 'input-type' option
