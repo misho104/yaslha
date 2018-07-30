@@ -1,6 +1,7 @@
 import pathlib
-from typing import Union
+from typing import Union, Mapping  # noqa: F401
 
+import yaslha.config
 import yaslha.parser
 import yaslha.dumper
 from yaslha.core import SLHA, Block, Decay  # noqa: F401
@@ -10,6 +11,8 @@ __pkgname__ = 'yaslha'
 __version__ = '0.0.3'
 __author__ = 'Sho Iwamoto / Misho'
 __license__ = 'MIT'
+
+cfg = yaslha.config.read_config()  # type: Mapping
 
 
 def parse(text: Union[str, pathlib.Path], **kwargs)->SLHA:
