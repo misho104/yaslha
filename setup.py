@@ -19,8 +19,10 @@ setup(
     python_requires='>=3.4',
     license='MIT',
     packages=['yaslha'],
+    zip_safe=False,   # for yaslha.cfg.default
     package_data={
         'yaslha': [
+            'yaslha.cfg.default',
             'tests/data/*',
         ]},
     install_requires=[

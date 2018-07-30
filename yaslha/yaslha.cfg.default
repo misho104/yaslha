@@ -1,0 +1,16 @@
+[yaslha.dumper.AbsDumper]
+blocks_order:      default
+values_order:      default
+comments_preserve: all
+
+
+[yaslha.dumper.SLHADumper]
+separate_blocks:       False
+forbid_last_linebreak: False
+document_blocks@list:            # space-separated block names
+
+# hidden options
+block_str:   BLOCK
+decay_str:   DECAY
+float_lower: False
+write_version: True

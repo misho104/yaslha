@@ -1,28 +1,14 @@
 import enum
 import os
+import pathlib
 import configparser
 from typing import Mapping, Union
 
 
-CONFIG_FILES = [os.path.expanduser('~/.yaslha.cfg'), 'yaslha.cfg']  # latter overrides former
-CONFIG_DEFAULT = """
-[yaslha.dumper.AbsDumper]
-blocks_order:      default
-values_order:      default
-comments_preserve: all
-
-
-[yaslha.dumper.SLHADumper]
-separate_blocks:       False
-forbid_last_linebreak: False
-document_blocks@list:            # space-separated block names
-
-# hidden options
-block_str:   BLOCK
-decay_str:   DECAY
-float_lower: False
-write_version: True
-"""
+CONFIG_FILES = [
+    str(pathlib.Path(__file__).with_name('yaslha.cfg.default')),
+    os.path.expanduser('~/.yaslha.cfg'),
+    'yaslha.cfg']  # latter overrides former
 
 
 class ConfigDict(dict):
@@ -43,7 +29,6 @@ class ConfigDict(dict):
 
 def read_config()->Mapping:
     config = configparser.ConfigParser(inline_comment_prefixes='#')
-    config.read_string(CONFIG_DEFAULT)
     config.read(CONFIG_FILES)
     return compose_dict(config)
 
