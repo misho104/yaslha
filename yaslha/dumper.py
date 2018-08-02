@@ -269,7 +269,7 @@ class SLHADumper(AbsDumper):
 
 
 class AbsMarshalDumper(AbsDumper):
-    SCHEME_VERSION = 1
+    SCHEME_VERSION = 2
 
     def __init__(self, **kwargs)->None:
         super().__init__(**kwargs)
@@ -289,20 +289,36 @@ class AbsMarshalDumper(AbsDumper):
     def marshal_block(self, block: 'yaslha.Block')->Mapping[Any, Any]:
         data = OrderedDict([('info', None),
                             ('values', None),
-                            ('comments', OrderedDict())])  # type: MutableMapping[str, Any]
+                            ('comments', list())])  # type: MutableMapping[str, Any]
         values, key_order = self._block_lines_with_key_order(block)
         values_without_comment_lines = _flatten([v for v in values if not isinstance(v, yaslha.line.CommentLine)])
         if block.q:
             data['info'] = ['Q=', block.q]
         if self.comments_preserve.keep_line():
+            # comments before heading or after body
             for c_pos in CommentPosition:
                 if block.line_comment(c_pos):
-                    data['comments'][c_pos.name] = [v.line for v in block.line_comment(c_pos)]
-        if self.comments_preserve.keep_tail():
+                    data['comments'].append([c_pos.name, [v.line for v in block.line_comment(c_pos)]])
+            # comments between values
             present_keys = block.line_comment_keys()
             for c_key in key_order:
                 if c_key in present_keys:
-                    data['comments'][c_key] = [v.line for v in block.line_comment(c_key)]
+                    c = ['before']  # type: List[Any]
+                    if c_key is not None:
+                        c = _flatten(c + [c_key])
+                    data['comments'].append(c + block.line_comment(c_key))
+
+        if self.comments_preserve.keep_tail():
+            if block.head_comment:
+                data['comments'].append(['head', block.head_comment])
+            for line in values_without_comment_lines:
+                if line.comment:
+                    c = _flatten([] if line.key is None else [line.key])
+                    c.append(line.comment)
+                    data['comments'].append(c)
+
+        if not data['comments']:
+            del data['comments']
 
         data['values'] = list([self.marshal_line(line) for line in values_without_comment_lines])
         return _clean(data)
@@ -310,19 +326,35 @@ class AbsMarshalDumper(AbsDumper):
     def marshal_decay(self, decay: 'yaslha.Decay')->Mapping[Any, Any]:
         data = OrderedDict([('info', [decay.width]),
                             ('values', None),
-                            ('comments', OrderedDict())])  # type: MutableMapping[str, Any]
+                            ('comments', list())])  # type: MutableMapping[str, Any]
         values, key_order = self._decay_lines_with_key_order(decay)
         values_without_comment_lines = _flatten([v for v in values if not isinstance(v, yaslha.line.CommentLine)])
 
         if self.comments_preserve.keep_line():
+            # comments before heading or after body
             for c_pos in yaslha.line.CommentPosition:
                 if decay.line_comment(c_pos):
-                    data['comments'][c_pos.name] = [v.line for v in decay.line_comment(c_pos)]
-        if self.comments_preserve.keep_tail():
+                    data['comments'].append([c_pos.name, [v.line for v in decay.line_comment(c_pos)]])
+            # comments between values
             present_keys = decay.line_comment_keys()
             for c_key in key_order:
                 if c_key in present_keys:
-                    data['comments'][str(c_key)] = [v.line for v in decay.line_comment(c_key)]
+                    c = ['before']  # type: List[Any]
+                    if c_key is not None:
+                        c = _flatten(c + [c_key])
+                    data['comments'].append(c + decay.line_comment(c_key))
+
+        if self.comments_preserve.keep_tail():
+            if decay.head_comment:
+                data['comments'].append(['head', decay.head_comment])
+            for line in values_without_comment_lines:
+                if line.comment:
+                    c = _flatten([] if line.key is None else [line.key])
+                    c.append(line.comment)
+                    data['comments'].append(c)
+
+        if not data['comments']:
+            del data['comments']
 
         data['values'] = list([self.marshal_line(line) for line in values_without_comment_lines])
         return _clean(data)
@@ -331,10 +363,14 @@ class AbsMarshalDumper(AbsDumper):
         if isinstance(line, yaslha.line.DecayLine):
             return _flatten([line.value, len(line.key), line.key])
         elif isinstance(line, yaslha.line.CommentLine):
-            pass
+            raise ValueError
         elif line.key is None:
             return [line.value]
+        elif isinstance(line, yaslha.line.InfoLine):
+            # InfoLine must have a key as (single) integer and a value as List[str].
+            return [line.key, line.value]
         else:
+            # other lines may have a key with multiple integers but the value is not a list.
             return _flatten([line.key, line.value])
 
 
