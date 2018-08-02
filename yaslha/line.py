@@ -92,7 +92,7 @@ class BlockLine(AbsLine):
     def __init__(self, name: str, q: Optional[StrFloat]=None, comment: str='')->None:
         self.name = name.upper()
         self.q = _float(q) if q is not None else None
-        self.comment = comment or ''
+        self.comment = (comment or '').strip()
 
 
 class DecayBlockLine(AbsLine):
@@ -102,7 +102,7 @@ class DecayBlockLine(AbsLine):
     def __init__(self, pid: StrInt, width: StrFloat, comment: str='')->None:
         self.pid = int(pid)
         self.width = _float(width)
-        self.comment = comment or ''
+        self.comment = (comment or '').strip()
 
     def __str__(self)->str:
         return 'DECAY {:>9}   {:16.8e}   # {}'.format(self.pid, self.width, self.comment.lstrip).rstrip()
@@ -141,7 +141,7 @@ class ValueLine(AbsLine):
     def __init__(self, key: KeyType, value: ValueType, comment: str='')->None:
         self.key = guess_key_type(key)
         self.value = guess_type(value)
-        self.comment = comment or ''
+        self.comment = (comment or '').strip()
 
 
 class NoIndexLine(ValueLine):
@@ -199,7 +199,7 @@ class DecayLine(ValueLine):
         else:
             self.key = channel
         self.value = _float(br)
-        self.comment = comment or ''
+        self.comment = (comment or '').strip()
 
 
 def parse_string(line: str)->Optional[AbsLine]:
