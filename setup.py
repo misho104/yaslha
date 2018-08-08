@@ -30,7 +30,10 @@ setup(
         'typing;python_version<"3.5"',
     ],
     entry_points={
-        'console_scripts': ['yaslha-convert=yaslha.script:convert']
+        'console_scripts': [
+            'yaslha-convert=yaslha.script:convert',
+            'yaslha-merge=yaslha.script:merge',
+        ]
     },
     tests_require=['nose', 'coverage', 'mypy', 'flake8'],
     test_suite='nose.collector',

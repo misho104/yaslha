@@ -52,7 +52,7 @@ class CaseInsensitiveChoice(click.Choice):
               help='Order of SLHA blocks')
 @click.option('--values', type=CaseInsensitiveChoice(yaslha.dumper.ValuesOrder), default='DEFAULT',
               help='Order of values')
-@click.version_option(__version__, '-V', '--version', prog_name=__scriptname__)
+@click.version_option(__version__, '-V', '--version', prog_name=yaslha.__pkgname__ + '/converter')
 # @click.option('-v', '--verbose', is_flag=True, default=False, help="Show verbose output")
 def convert(**kwargs):
     # TODO: use 'input-type' option
@@ -77,3 +77,28 @@ def convert(**kwargs):
             f.write(output_string)
     else:
         print(output_string)
+
+
+@click.command(help='Merge two SLHA files', context_settings=dict(help_option_names=['-h', '--help']))
+@click.option('-e', is_flag=True, default=False, help='Read from STDIN and append to the SLHA data')
+@click.argument('input', nargs=-1, type=click.Path(exists=True, dir_okay=False), required=False)
+@click.version_option(__version__, '-V', '--version', prog_name=yaslha.__pkgname__ + '/merger')
+@click.pass_context  # for help
+def merge(ctx, **kwargs):
+    slha = yaslha.SLHA()
+    for i in kwargs['input']:
+        with open(kwargs['input']) as f:
+            slha.merge(yaslha.parse(f.read()))
+    if kwargs['e']:
+        slha.merge(yaslha.parse(sys.stdin.read()))
+
+    if not (slha.blocks or slha.decays):
+        click.echo(ctx.get_usage())
+        ctx.exit(1)
+
+    output_string = yaslha.dump(data=slha, output_type='SLHA',
+                                comments_preserve=yaslha.dumper.CommentsPreserve.ALL,
+                                blocks_order=yaslha.dumper.BlocksOrder.KEEP,
+                                values_order=yaslha.dumper.ValuesOrder.KEEP,
+                                )
+    print(output_string)

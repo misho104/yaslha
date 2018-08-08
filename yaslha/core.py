@@ -81,6 +81,16 @@ class SLHA:
                 return v
         return 0
 
+    def merge(self, another: 'SLHA')->None:
+        for k, v in another.blocks.items():
+            if k in self.blocks:
+                self.blocks[k].merge(v)
+            else:
+                self.blocks[k] = copy.deepcopy(v)
+        self.decays.update(copy.deepcopy(another.decays))
+        if another._tail_comment:
+            self._tail_comment = copy.deepcopy(another._tail_comment)
+
 
 class Block:
     """Represent a block.
@@ -211,6 +221,13 @@ class Block:
 
     def items(self):
         return [(k, v.value) for k, v in self._data.items()]
+
+    def merge(self, another: 'Block'):
+        self.q = another.q
+        if another.head_comment:
+            self.head_comment = copy.deepcopy(another.head_comment)
+        self._data.update(copy.deepcopy(another._data))
+        self._comment_lines.update(copy.deepcopy(another._comment_lines))
 
 
 class PartialWidth:
