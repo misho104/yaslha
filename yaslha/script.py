@@ -87,7 +87,7 @@ def convert(**kwargs):
 def merge(ctx, **kwargs):
     slha = yaslha.SLHA()
     for i in kwargs['input']:
-        with open(kwargs['input']) as f:
+        with open(i) as f:
             slha.merge(yaslha.parse(f.read()))
     if kwargs['e']:
         slha.merge(yaslha.parse(sys.stdin.read()))

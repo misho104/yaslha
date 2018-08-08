@@ -6,7 +6,7 @@ relax:
 
 clean:
 	python setup.py clean
-	rm -rf pylha.egg-info htmlcov .coverage pylha/__pycache__ pylha/tests/__pycache__ build dist
+	rm -rf yaslha.egg-info htmlcov .coverage yaslha/__pycache__ yaslha/tests/__pycache__ build dist
 
 .PHONY: test unittest typetest formattest
 test: unittest typetest formattest
