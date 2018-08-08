@@ -8,7 +8,7 @@ from yaslha.core import SLHA, Block, Decay  # noqa: F401
 
 
 __pkgname__ = 'yaslha'
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 __author__ = 'Sho Iwamoto / Misho'
 __license__ = 'MIT'
 
