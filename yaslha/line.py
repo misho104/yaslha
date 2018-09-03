@@ -124,7 +124,7 @@ class InfoLine(AbsLine):
             raise yaslha.exceptions.InvalidInfoBlockError(key)
         self.value = list()      # type: List[str]
         self.comment = list()    # type: List[str]
-        self.append(value, comment)
+        self.append(value, comment or '')
 
     def append(self, value: Union[str, List[str]], comment: Union[str, List[str]]='')->None:
         value = value if isinstance(value, list) else [value]
