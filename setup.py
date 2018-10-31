@@ -33,6 +33,7 @@ setup(
         'console_scripts': [
             'yaslha-convert=yaslha.script:convert',
             'yaslha-merge=yaslha.script:merge',
+            'yaslha-extract=yaslha.script:extract',
         ]
     },
     tests_require=['nose', 'coverage', 'mypy', 'flake8'],

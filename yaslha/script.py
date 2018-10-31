@@ -1,6 +1,8 @@
 import enum
 import logging
+import re
 import sys
+from typing import List
 
 import click
 
@@ -101,4 +103,42 @@ def merge(ctx, **kwargs):
                                 blocks_order=yaslha.dumper.BlocksOrder.KEEP,
                                 values_order=yaslha.dumper.ValuesOrder.KEEP,
                                 )
+    print(output_string)
+
+
+@click.command(help='Extract BLOCKS (comma-separated) from a SLHA file',
+               context_settings=dict(help_option_names=['-h', '--help']))
+@click.argument('blocks', type=str, required=True)
+@click.argument('input', type=click.Path(exists=True, dir_okay=False), required=False)
+@click.version_option(__version__, '-V', '--version', prog_name=yaslha.__pkgname__ + '/extractor')
+@click.pass_context  # for help
+def extract(ctx, **kwargs):
+    blocks = kwargs['blocks'].split(',')
+    if not blocks:
+        click.echo('No blocks specified.')
+        exit(1)
+
+    if kwargs['input']:
+        with open(kwargs['input']) as f:
+            input_string = f.read()
+    else:
+        input_string = sys.stdin.read()
+    slha = yaslha.parse(input_string)
+    dumper = yaslha.dumper.SLHADumper()
+
+    output_list = []   # type: List[Sequence[str]]
+    for block in blocks:
+        if re.match(r'^\d+$', block):
+            try:
+                output_list.append(dumper.dump_decay(slha.decays[block]))
+            except KeyError:
+                click.echo('DECAY block for PID {} not found.'.format(block))
+                exit(1)
+        else:
+            try:
+                output_list.append(dumper.dump_block(slha.blocks[block.upper()]))
+            except KeyError:
+                click.echo('Block {} not found'.format(block.upper()))
+                exit(1)
+    output_string = '\n'.join('\n'.join(block) for block in output_list)
     print(output_string)
