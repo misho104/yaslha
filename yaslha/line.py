@@ -1,6 +1,6 @@
 import enum
 import re
-from typing import cast, Optional, Union, List
+from typing import cast, Any, Optional, Union, List, Pattern  # noqa: F401
 
 import yaslha.exceptions
 from yaslha.utility import _float, KeyType, ValueType, ChannelType
@@ -20,21 +20,26 @@ RE_INT = re.compile('^' + INT + '$', re.IGNORECASE)
 RE_FLOAT = re.compile('^' + FLOAT + '$', re.IGNORECASE)
 
 
-def cap(regexp: str, name: str) -> str:
+def cap(regexp, name):
+    # type: (str, str)->str
+    """Returns capture-pattern of REGEXP string."""
     return '(?P<{}>{})'.format(name, regexp)
 
 
-def possible(regexp) -> str:
+def possible(regexp):
+    # type: (str)->str
     return '(?:{})?'.format(regexp)
 
 
-def guess_key_type(value: KeyType) -> KeyType:
+def guess_key_type(value):
+    # type: (KeyType)->KeyType
     if isinstance(value, str) and RE_INT.match(value):
         return int(value)
     return value
 
 
-def guess_type(value: ValueType) -> ValueType:
+def guess_type(value):
+    # type: (ValueType)->ValueType
     if isinstance(value, str):
         if RE_INT.match(value):
             return int(value)
@@ -44,16 +49,19 @@ def guess_type(value: ValueType) -> ValueType:
 
 
 class AbsLine:
-    IN = NotImplemented   # type: str
-    IN_PATTERN = None     # filled later
+    IN = NotImplemented  # type: str
+    IN_PATTERN = None    # type: Pattern
+    # IN_PATTERN is filled later
 
-    def __init__(self, *args, **kwargs)->None:
-        self.key = NotImplemented
-        self.value = NotImplemented
-        self.comment = NotImplemented
+    def __init__(self, **kwargs):
+        # type: (Any)->None
+        self.key = NotImplemented       # type: KeyType
+        self.value = NotImplemented     # type: ValueType
+        self.comment = NotImplemented   # type: Union[str, List[str]]
 
     @classmethod
-    def construct(cls, line: str)->Optional['AbsLine']:
+    def construct(cls, line):
+        # type: (str)->Optional[AbsLine]
         if cls.IN_PATTERN is None:
             # explicitly include ^ and $
             cls.IN_PATTERN = re.compile('^{}$'.format(cls.IN), re.IGNORECASE)
@@ -70,41 +78,45 @@ class CommentLine(AbsLine):
     We allow preceding spaces and 'empty' lines as input, while do not
     allow them as output because many other parsers do not like them.
     """
-    IN = cap('\s*(#.*)?', 'line')
+    IN = cap(r'\s*(#.*)?', 'line')
 
-    def __init__(self, line: str)->None:
+    def __init__(self, line):
+        # type: (str)->None
         self.line = line  # type: str
 
     @property
-    def line(self)->str:
+    def line(self):
+        # type: ()->str
         return self._line
 
     @line.setter
-    def line(self, value: str):
+    def line(self, value):
+        # type: (str)->None
         if not value.startswith('#'):
             value = '# ' + value.strip()
         self._line = value.rstrip()
 
 
 class BlockLine(AbsLine):
-    IN = 'Block' + SEP + cap(NAME, 'name') + possible(SEP + 'Q=\s*' + cap(FLOAT, 'q')) + TAIL
+    IN = 'Block' + SEP + cap(NAME, 'name') + possible(SEP + r'Q=\s*' + cap(FLOAT, 'q')) + TAIL
 
-    def __init__(self, name: str, q: Optional[StrFloat]=None, comment: str='')->None:
+    def __init__(self, name: str, q: Optional[StrFloat] = None, comment: str = '')->None:
         self.name = name.upper()
         self.q = _float(q) if q is not None else None
-        self.comment = (comment or '').strip()
+        self.comment = (comment or '').strip()   # type: str
 
 
 class DecayBlockLine(AbsLine):
     """A line with format ('DECAY',1x,I9,3x,1P,E16.8,0P,3x,'#',1x,A)"""
     IN = 'DECAY' + SEP + cap(INT, 'pid') + SEP + cap(FLOAT, 'width') + TAIL
 
-    def __init__(self, pid: StrInt, width: StrFloat, comment: str='')->None:
+    def __init__(self, pid: StrInt, width: StrFloat, comment: str = '')->None:
         self.pid = int(pid)
         self.width = _float(width)
-        self.comment = (comment or '').strip()
+        self.comment = (comment or '').strip()   # type: str
 
-    def __str__(self)->str:
+    def __str__(self):
+        # type: ()->str
         return 'DECAY {:>9}   {:16.8e}   # {}'.format(self.pid, self.width, self.comment.lstrip).rstrip()
 
 
@@ -114,19 +126,18 @@ class InfoLine(AbsLine):
     Note that this pattern is not exclusive; "IndexLine"s also match
     this pattern. So this is not a subclass of ValueLine.
     """
+    IN = r'\s*' + cap(INT, 'key') + SEP + cap(INFO, 'value') + TAIL
 
-    IN = '\s*' + cap(INT, 'key') + SEP + cap(INFO, 'value') + TAIL
-
-    def __init__(self, key: KeyType, value: Union[str, List[str]], comment: Union[str, List[str]]='')->None:
+    def __init__(self, key: KeyType, value: Union[str, List[str]], comment: Union[str, List[str]] = '')->None:
         try:
             self.key = int(key)  # type: ignore
         except TypeError:
             raise yaslha.exceptions.InvalidInfoBlockError(key)
-        self.value = list()      # type: List[str]
-        self.comment = list()    # type: List[str]
+        self.value = list()        # type: List[str]
+        self.comment = list()      # type: List[str]
         self.append(value, comment or '')
 
-    def append(self, value: Union[str, List[str]], comment: Union[str, List[str]]='')->None:
+    def append(self, value: Union[str, List[str]], comment: Union[str, List[str]] = '')->None:
         value = value if isinstance(value, list) else [value]
         comment = comment if isinstance(comment, list) else [comment]
         for i, v in enumerate(value):
@@ -138,67 +149,59 @@ class InfoLine(AbsLine):
 
 
 class ValueLine(AbsLine):
-    def __init__(self, key: KeyType, value: ValueType, comment: str='')->None:
+    def __init__(self, key: KeyType, value: ValueType, comment: str = '')->None:
         self.key = guess_key_type(key)
         self.value = guess_type(value)
-        self.comment = (comment or '').strip()
+        self.comment = (comment or '').strip()  # type: str
 
 
 class NoIndexLine(ValueLine):
     """A line with format(9x, 1P, E16.8, 0P, 3x, '#', 1x, A)"""
+    IN = r'\s*' + cap(FLOAT, 'value') + TAIL
 
-    IN = '\s*' + cap(FLOAT, 'value') + TAIL
-
-    def __init__(self, value: float, comment: str='')->None:
+    def __init__(self, value: float, comment: str = '')->None:
         super().__init__(None, value, comment)
 
 
 class OneIndexLine(ValueLine):
     """A line with format(1x,I5,3x,1P,E16.8,0P,3x,'#',1x,A)"""
+    IN = r'\s*' + cap(INT, 'index') + SEP + cap(FLOAT, 'value') + TAIL
 
-    IN = '\s*' + cap(INT, 'index') + SEP + cap(FLOAT, 'value') + TAIL
-
-    def __init__(self, index: StrInt, value: ValueType, comment: str='')->None:
+    def __init__(self, index: StrInt, value: ValueType, comment: str = '')->None:
         super().__init__(int(index), guess_type(value), comment)
 
 
 class TwoIndexLine(ValueLine):
     """A line with format(1x,I2,1x,I2,3x,1P,E16.8,0P,3x,'#',1x,A)"""
+    IN = r'\s*' + cap(INT, 'i1') + SEP + cap(INT, 'i2') + SEP + cap(FLOAT, 'value') + TAIL
 
-    IN = '\s*' + cap(INT, 'i1') + SEP + cap(INT, 'i2') + SEP + cap(FLOAT, 'value') + TAIL
-
-    def __init__(self, i1: StrInt, i2: StrInt, value: ValueType, comment: str='')->None:
+    def __init__(self, i1: StrInt, i2: StrInt, value: ValueType, comment: str = '')->None:
         super().__init__((int(i1), int(i2)), guess_type(value), comment)
 
 
 class ThreeIndexLine(ValueLine):
     """A line with format(1x,I2,1x,I2,1x,I2,3x,1P,E16.8,0P,3x,'#',1x,A)"""
+    IN = r'\s*' + cap(INT, 'i1') + SEP + cap(INT, 'i2') + SEP + cap(INT, 'i3') + SEP + cap(FLOAT, 'value') + TAIL
 
-    IN = '\s*' + cap(INT, 'i1') + SEP + cap(INT, 'i2') + SEP + cap(INT, 'i3') + SEP + cap(FLOAT, 'value') + TAIL
-
-    def __init__(self, i1: int, i2: int, i3: int, value: ValueType, comment: str='')->None:
+    def __init__(self, i1: int, i2: int, i3: int, value: ValueType, comment: str = '')->None:
         super().__init__((int(i1), int(i2), int(i3)), guess_type(value), comment)
 
 
 class DecayLine(ValueLine):
     """A line with format (3x,1P,E16.8,0P,3x,I2,3x,N (I9,1x),2x,'#',1x,A)."""
-    IN = '\s*' + cap(FLOAT, 'br') + SEP + cap(INT, 'nda') + SEP + cap(r'[0-9\s+-]+', 'daughters') + TAIL
+    IN = r'\s*' + cap(FLOAT, 'br') + SEP + cap(INT, 'nda') + SEP + cap(r'[0-9\s+-]+', 'daughters') + TAIL
 
-    def __init__(
-            self, br: float, nda: Optional[int]=0,
-            daughters: Optional[str]='',
-            channel: Optional[ChannelType]=None,
-            comment: str='')->None:
-        # nda is not used.
-        if not (daughters or channel):
-            raise ValueError('Neither string nor set is specified')
-        elif daughters and channel:
+    def __init__(self, br, nda=0, daughters='', channel=None, comment=''):  # nda is not used.
+        # type: (float, Optional[int], Optional[str], Optional[ChannelType], str)->None
+        if daughters and channel:
             raise ValueError('Both string and set is specified')
+        elif channel:
+            self.key = channel  # type: ChannelType
         elif daughters:
             self.key = tuple(int(pid) for pid in re.split(r'\s+', daughters.strip()))
         else:
-            self.key = channel
-        self.value = _float(br)
+            raise ValueError('Neither string nor set is specified')
+        self.value = _float(br)   # type: float
         self.comment = (comment or '').strip()
 
 

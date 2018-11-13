@@ -18,7 +18,7 @@ unittest:
 
 typetest:
 	@echo "# Checking typing by mypy..."
-	mypy --ignore-missing-imports --follow-imports=silent --no-strict-optional .
+	mypy --strict yaslha/*.py
 	@echo
 
 formattest:

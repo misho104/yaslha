@@ -1,74 +1,81 @@
 from collections import OrderedDict
 import copy
-from typing import cast, Optional, Union, List, MutableMapping
+from typing import cast, Tuple, Optional, Union, List, MutableMapping, Sequence, KeysView  # noqa: F401
 
 import yaslha.dumper
 import yaslha.exceptions as exceptions
 import yaslha.line
 import yaslha.parser
-from yaslha.line import CommentPositionType, CommentPosition
-from yaslha.utility import KeyType, ValueType, ChannelType
+from yaslha.line import CommentPositionType, CommentPosition  # noqa: F401
+from yaslha.utility import KeyType, ValueType, ChannelType    # noqa: F401
 
 
 class SLHA:
-    def __init__(self, obj: Optional['SLHA']=None)->None:
+    def __init__(self, obj=None):
+        # type: (Optional[SLHA])->None
         if isinstance(obj, SLHA):
             # copy constructor
-            self.blocks = copy.deepcopy(obj.blocks)  # type: OrderedDict[str, Block]
-            self.decays = copy.deepcopy(obj.decays)  # type: OrderedDict[int, Decay]
+            self.blocks = copy.deepcopy(obj.blocks)                # type: OrderedDict[str, Block]
+            self.decays = copy.deepcopy(obj.decays)                # type: OrderedDict[int, Decay]
             self._tail_comment = copy.deepcopy(obj._tail_comment)  # type: List[yaslha.line.CommentLine]
         else:
             self.blocks = OrderedDict()
             self.decays = OrderedDict()
             self._tail_comment = list()
 
-    def dump(self, dumper=None)->str:
+    def dump(self, dumper=None):
+        # type: (Optional[yaslha.dumper.AbsDumper])->str
         if dumper is None:
             dumper = yaslha.dumper.SLHADumper()
         return dumper.dump(self)
 
     @property
-    def tail_comment(self)->List['yaslha.line.CommentLine']:
+    def tail_comment(self):
+        # type: ()->List[yaslha.line.CommentLine]
         return self._tail_comment
 
     @tail_comment.setter
-    def tail_comment(self, value: Union[str, List[str], List[yaslha.line.CommentLine]])->None:
+    def tail_comment(self, value):
+        # type: (Union[str, List[str], List[yaslha.line.CommentLine]])->None
         if isinstance(value, str):
             value = [value]
         self._tail_comment = [v if isinstance(v, yaslha.line.CommentLine)
                               else yaslha.line.CommentLine(v)
                               for v in value]
 
-    def get(self, block_name: str, key: KeyType=None, default=None)->Optional[ValueType]:
+    def get(self, block_name, key=None, default=None):
+        # type: (str, KeyType, Optional[ValueType])->Optional[ValueType]
         block_name = block_name.upper()
         if block_name in self.blocks:
             return self.blocks[block_name].get(key, default=default)
         else:
             return default
 
-    def set(self, block_name: str, key: KeyType, value: ValueType, comment: str='')->None:
+    def set(self, block_name, key, value, comment=''):
+        # type: (str, KeyType, ValueType, str)->None
         block_name = block_name.upper()
         if block_name not in self.blocks:
             self.blocks[block_name] = Block(block_name)
         self.blocks[block_name].set(key, value, comment)
 
-    def set_info(self, block_name: str, key: int,
-                 value: Union[ValueType, List[ValueType]],
-                 comment: Union[str, List[str]]='')->None:
+    def set_info(self, block_name, key, value, comment=''):
+        # type: (str, int, Union[ValueType, List[ValueType]], Union[str, List[str]])->None
         block_name = block_name.upper()
         if block_name not in self.blocks:
             self.blocks[block_name] = Block(block_name)
         value = [str(v) for v in value] if isinstance(value, list) else str(value)
         self.blocks[block_name][key] = yaslha.line.InfoLine(key, value, comment)
 
-    def append_info(self, block_name: str, key: int, value: ValueType, comment: str=''):
+    def append_info(self, block_name, key, value, comment=''):
+        # type: (str, int, ValueType, str)->None
         block_name = block_name.upper()
         obj = self.blocks.get(block_name, key)
         if not isinstance(obj, yaslha.line.InfoLine):
             raise TypeError('{}-{} is not InfoLine.'.format(block_name, key))
         obj.append(str(value), comment)
 
-    def br(self, mother: int, *daughters: int)->float:
+    def br(self, mother, *daughters):
+        # type: (int, int)->Optional[float]
         # TODO: we will have a 'NormalizedOrderedDict' to handle with order- (as well as case-) insensitive dict.
         try:
             decay = self.decays[mother]
@@ -81,7 +88,8 @@ class SLHA:
                 return v
         return 0
 
-    def merge(self, another: 'SLHA')->None:
+    def merge(self, another):
+        # type: (SLHA)->None
         for k, v in another.blocks.items():
             if k in self.blocks:
                 self.blocks[k].merge(v)
@@ -100,14 +108,16 @@ class Block:
     can access its comment.
     """
 
-    def __init__(self, name: Union[str, 'Block'], q: Optional[float] = None, head_comment: str='')->None:
+    def __init__(self, name, q=None, head_comment=''):
+        # type: (Union[str, 'Block'], Optional[float], str)->None
         if isinstance(name, str):
             # normal constructor
-            self.name = name
-            self.q = q
-            self.head_comment = head_comment      # comment in BLOCK line
-            self._data = OrderedDict()  # type: OrderedDict[KeyType, yaslha.line.AbsLine]
-            self._comment_lines = dict()   # type: MutableMapping[CommentPositionType, List[yaslha.line.CommentLine]]
+            self.name = name                  # type: str
+            self.q = q                        # type: Optional[float]
+            # comment in BLOCK line
+            self.head_comment = head_comment  # type: str
+            self._data = OrderedDict()        # type: OrderedDict[KeyType, yaslha.line.AbsLine]
+            self._comment_lines = dict()      # type: MutableMapping[CommentPositionType, List[yaslha.line.CommentLine]]
         elif isinstance(name, Block):
             # copy constructor
             self.name = name.name
@@ -120,109 +130,128 @@ class Block:
 
     @property
     def name(self):
+        # type: ()->str
         return self._name
 
     @name.setter
     def name(self, new_name):
+        # type: (str)->None
         self._name = new_name.upper()
 
     # setter
-    def __setitem__(self, key: KeyType, obj: Union[ValueType, yaslha.line.AbsLine])->None:
+    def __setitem__(self, key, obj):
+        # type: (KeyType, Union[ValueType, yaslha.line.AbsLine])->None
         if isinstance(obj, yaslha.line.AbsLine):
             self._data[key] = obj
         else:
             self._data[key] = yaslha.line.ValueLine(key, obj)
 
-    def set_comment(self, key: KeyType, comment: str)->None:
+    def set_comment(self, key, comment):
+        # type: (KeyType, str)->None
         if key in self._data:
             self._data[key].comment = comment
         else:
             raise KeyError  # developer level error; user won't see this.
 
-    def set(self, key: KeyType, value: ValueType, comment: str=''):
+    def set(self, key, value, comment=''):
+        # type: (KeyType, ValueType, str)->None
         self.__setitem__(key, yaslha.line.ValueLine(key, value, comment))
 
-    def add_line_comment(self, position: 'CommentPositionType', value: Union[str, yaslha.line.CommentLine])->None:
+    def add_line_comment(self, position, value):
+        # type: (CommentPositionType, Union[str, yaslha.line.CommentLine])->None
         if position not in self._comment_lines:
             self._comment_lines[position] = list()
         self._comment_lines[position].append(value if isinstance(value, yaslha.line.CommentLine)
                                              else yaslha.line.CommentLine(value))
 
-    def set_line_comment(self,
-                         position: 'CommentPositionType',
-                         value: Union[str, List[str], List[yaslha.line.CommentLine]])->None:
+    def set_line_comment(self, position, value):
+        # type: (CommentPositionType, Union[str, List[str], List[yaslha.line.CommentLine]])->None
         if isinstance(value, str):
             value = [value]
         self._comment_lines[position] = [v if isinstance(v, yaslha.line.CommentLine)
                                          else yaslha.line.CommentLine(v)
                                          for v in value]
 
-    def clear_line_comment(self, position: 'CommentPositionType')->None:
+    def clear_line_comment(self, position):
+        # type: (CommentPositionType)->None
         if position in self._comment_lines:
             del self._comment_lines[position]
 
     # getter
-    def __getitem__(self, key: KeyType=None)->ValueType:
+    def __getitem__(self, key=None):
+        # type: (KeyType)->ValueType
         return self._data[key].value
 
-    def get(self, key: KeyType=None, default=None):
+    def get(self, key=None, default=None):
+        # type: (KeyType, Optional[ValueType])->Optional[ValueType]
         if key in self._data:
             return self._data[key].value
         else:
             return default
 
-    def get_line_obj(self, key: KeyType=None, default=None):
+    def get_line_obj(self, key=None, default=None):
+        # type: (KeyType, Optional[yaslha.line.AbsLine])->Optional[yaslha.line.AbsLine]
         if key in self._data:
             return self._data[key]
         else:
             return default
 
-    def comment(self, key: KeyType=None, default: Optional[str]=None):
+    def comment(self, key=None, default=''):
+        # type: (KeyType, str)->Union[str, List[str]]
         if key in self._data or default is None:
             return self._data[key].comment
         else:
             return default
 
-    def line_comment(self, position: 'CommentPositionType')->List[yaslha.line.CommentLine]:
+    def line_comment(self, position):
+        # type: (CommentPositionType)->List[yaslha.line.CommentLine]
         return self._comment_lines.get(position, [])
 
-    def line_comment_keys(self)->List[CommentPositionType]:
+    def line_comment_keys(self):
+        # type: ()->List[CommentPositionType]
         return [v for v in self._comment_lines.keys() if not isinstance(v, CommentPosition)]
 
     # accessor to line itself
-    def head_line(self)->yaslha.line.BlockLine:
+    def head_line(self):
+        # type: ()->yaslha.line.BlockLine
         return yaslha.line.BlockLine(name=self.name, q=self.q, comment=self.head_comment)
 
-    def value_lines(self, with_comment_lines: bool=True)->MutableMapping[KeyType, List[yaslha.line.AbsLine]]:
+    def value_lines(self, with_comment_lines=True):
+        # type: (bool)->MutableMapping[KeyType, List[yaslha.line.AbsLine]]
         result = OrderedDict()   # type: OrderedDict[KeyType, List[yaslha.line.AbsLine]]
         dumped_line_comment = set()
         for key, value in self._data.items():
             result[key] = cast(List[yaslha.line.AbsLine], self.line_comment(key)) if with_comment_lines else []
             result[key].append(value)
             dumped_line_comment.add(key)
-
         if with_comment_lines:
             for orphan_key in set(self.line_comment_keys()) - dumped_line_comment:
                 exceptions.OrphanCommentWarning(self.line_comment(orphan_key)).call()
         return result
 
     # other accessors
-    def __delitem__(self, key)->None:
+    def __delitem__(self, key):
+        # type: (KeyType)->None
         self._data.__delitem__(key)
 
-    def __contains__(self, key: KeyType)->bool:
+    def __contains__(self, key):
+        # type: (KeyType)->bool
         return self._data.__contains__(key)
 
     def __len__(self):
+        # type: ()->int
         return self._data.__len__()
 
     def keys(self):
+        # type: ()->KeysView[KeyType]
         return self._data.keys()
 
     def items(self):
+        # type: ()->List[Tuple[KeyType, ValueType]]
         return [(k, v.value) for k, v in self._data.items()]
 
-    def merge(self, another: 'Block'):
+    def merge(self, another):
+        # type: (Block)->None
         self.q = another.q
         if another.head_comment:
             self.head_comment = copy.deepcopy(another.head_comment)
@@ -231,20 +260,22 @@ class Block:
 
 
 class PartialWidth:
-    def __init__(self, width: float, comment: str ='')->None:
-        self.width = width
-        self.comment = comment
+    def __init__(self, width, comment=''):
+        # type: (float, str)->None
+        self.width = width      # type: float
+        self.comment = comment  # type: str
 
 
 class Decay:
-    def __init__(self, pid: Union[int, 'Decay'], width: float=0., head_comment: str='')->None:
+    def __init__(self, pid, width=0., head_comment=''):
+        # type: (Union[int, Decay], float, str)->None
         if isinstance(pid, int):
             # normal constructor
-            self.pid = pid              # type: int
-            self._width = width          # type: float
-            self.head_comment = head_comment
-            self._data = OrderedDict()  # type: OrderedDict[ChannelType, PartialWidth]
-            self._comment_lines = dict()   # type: MutableMapping[CommentPositionType, List[yaslha.line.CommentLine]]
+            self.pid = pid                    # type: int
+            self._width = width               # type: float
+            self.head_comment = head_comment  # type: str
+            self._data = OrderedDict()        # type: OrderedDict[ChannelType, PartialWidth]
+            self._comment_lines = dict()      # type: MutableMapping[CommentPositionType, List[yaslha.line.CommentLine]]
         elif isinstance(pid, Decay):
             # copy constructor
             self.pid = pid.pid
@@ -256,88 +287,102 @@ class Decay:
             raise TypeError  # developer level error; user won't see this.
 
     @property
-    def width(self)->float:
+    def width(self):
+        # type: ()->float
         return self._width   # forbid direct set of width
 
-    def _update_width(self)->float:
+    def _update_width(self):
+        # type: ()->float
         self._width = sum(self.values())
         return self._width
 
     # setter
-    def __setitem__(self, channel: ChannelType, br: Union[float, yaslha.line.DecayLine])->None:
+    def __setitem__(self, channel, br):
+        # type: (ChannelType, Union[float, yaslha.line.DecayLine])->None
         if isinstance(br, yaslha.line.DecayLine):
             self._data[channel] = PartialWidth(self.width * br.value, br.comment)
         else:
             self._data[channel] = PartialWidth(self.width * br, '')
 
-    def set_partial_width(self, channel: ChannelType, width: float, comment: Optional[str] = None):
+    def set_partial_width(self, channel, width, comment=''):
+        # type: (ChannelType, float, str)->None
         if channel in self._data:
             self._data[channel].width = width
             if comment is not None:
                 self._data[channel].comment = comment
         else:
-            self._data[channel] = PartialWidth(width, comment or '')
+            self._data[channel] = PartialWidth(width, comment)
         self._update_width()
 
-    def set_comment(self, channel: ChannelType, comment: str):
+    def set_comment(self, channel, comment):
+        # type: (ChannelType, str)->None
         if channel in self._data:
             self._data[channel].comment = comment
         else:
             raise KeyError  # developer level error; user won't see this.
 
-    def add_line_comment(self, position: 'CommentPositionType', value: Union[str, yaslha.line.CommentLine])->None:
+    def add_line_comment(self, position, value):
+        # type: (CommentPositionType, Union[str, yaslha.line.CommentLine])->None
         if position not in self._comment_lines:
             self._comment_lines[position] = list()
         self._comment_lines[position].append(value if isinstance(value, yaslha.line.CommentLine)
                                              else yaslha.line.CommentLine(value))
 
-    def set_line_comment(self,
-                         position: 'CommentPositionType',
-                         value: Union[str, List[str], List[yaslha.line.CommentLine]])->None:
+    def set_line_comment(self, position, value):
+        # type: (CommentPositionType, Union[str, List[str], List[yaslha.line.CommentLine]])->None
         if isinstance(value, str):
             value = [value]
         self._comment_lines[position] = [v if isinstance(v, yaslha.line.CommentLine)
                                          else yaslha.line.CommentLine(v)
                                          for v in value]
 
-    def clear_line_comment(self, position: 'CommentPositionType')->None:
+    def clear_line_comment(self, position):
+        # type: (CommentPositionType)->None
         if position in self._comment_lines:
             del self._comment_lines[position]
 
     # getter
-    def __getitem__(self, channel: ChannelType)->float:
+    def __getitem__(self, channel):
+        # type: (ChannelType)->float
         return self._data[channel].width / self.width
 
-    def get_br(self, channel: ChannelType)->float:
+    def get_br(self, channel):
+        # type: (ChannelType)->float
         if channel in self._data:
             # TODO: write a good method to chop after 1+8 digits
             return float('{:.10g}'.format(self._data[channel].width / self.width))
         else:
             return 0.0
 
-    def get_partial_width(self, channel: ChannelType)->float:
+    def get_partial_width(self, channel):
+        # type: (ChannelType)->float
         if channel in self._data:
             return self._data[channel].width
         else:
             return 0.0
 
-    def comment(self, channel: ChannelType, default: Optional[str]=None):
+    def comment(self, channel, default=''):
+        # type: (ChannelType, str)->str
         if channel in self._data or default is None:
             return self._data[channel].comment
         else:
             return default
 
-    def line_comment(self, position: 'CommentPositionType')->List[yaslha.line.CommentLine]:
+    def line_comment(self, position):
+        # type: (CommentPositionType)->List[yaslha.line.CommentLine]
         return self._comment_lines.get(position, [])
 
-    def line_comment_keys(self)->List[CommentPositionType]:
+    def line_comment_keys(self):
+        # type: ()->List[CommentPositionType]
         return [v for v in self._comment_lines.keys() if not isinstance(v, CommentPosition)]
 
     # accessor to line itself
-    def head_line(self)->yaslha.line.DecayBlockLine:
+    def head_line(self):
+        # type: ()->yaslha.line.DecayBlockLine
         return yaslha.line.DecayBlockLine(pid=self.pid, width=self.width, comment=self.head_comment)
 
-    def value_lines(self, with_comment_lines: bool=True)->MutableMapping[KeyType, List[yaslha.line.AbsLine]]:
+    def value_lines(self, with_comment_lines=True):
+        # type: (bool)->MutableMapping[KeyType, List[yaslha.line.AbsLine]]
         result = OrderedDict()   # type: OrderedDict[KeyType, List[yaslha.line.AbsLine]]
         dumped_line_comment = set()
         for ch, value in self._data.items():
@@ -352,28 +397,36 @@ class Decay:
 
     # other accessors
     def __delitem__(self, channel):
+        # type: (ChannelType)->None
         self._data.__delitem__(channel)
-        self.update_width()
+        self._update_width()
 
-    def __contains__(self, channel: ChannelType)->bool:
+    def __contains__(self, channel):
+        # type: (ChannelType)->bool
         return self._data.__contains__(channel)
 
     def __len__(self):
+        # type: ()->int
         return self._data.__len__()
 
     def keys(self):
+        # type: ()->KeysView[ChannelType]
         return self._data.keys()
 
     def values(self):
+        # type: ()->List[float]
         return [v.width for v in self._data.values()]
 
     def items_width(self):
+        # type: ()->List[Tuple[ChannelType, float]]
         return [(k, v.width) for k, v in self._data.items()]
 
     def items_br(self):
+        # type: ()->List[Tuple[ChannelType, float]]
         return [(k, v.width / self.width) for k, v in self._data.items()]
 
-    def rename_channel(self, old: ChannelType, new: ChannelType):
+    def rename_channel(self, old, new):
+        # type: (ChannelType, ChannelType)->None
         if old not in self or (new != old and new in self):
             raise KeyError
 

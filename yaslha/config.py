@@ -2,7 +2,7 @@ import enum
 import os
 import pathlib
 import configparser
-from typing import Mapping, Union
+from typing import Mapping, Union, Dict, Any, TypeVar, Tuple, Optional  # noqa: F401
 
 
 CONFIG_FILES = [
@@ -11,8 +11,9 @@ CONFIG_FILES = [
     'yaslha.cfg']  # latter overrides former
 
 
-class ConfigDict(dict):
+class ConfigDict(Dict[str, Any]):
     def value(self, key, override=None, typ=None):
+        # type: (str, Any, Any)->Any
         configuration = self[key]
 
         if typ and issubclass(typ, enum.Enum):
@@ -27,17 +28,20 @@ class ConfigDict(dict):
         return configuration if override is None else override
 
 
-def read_config()->Mapping:
+def read_config():
+    # type: ()->ConfigDict
     config = configparser.ConfigParser(inline_comment_prefixes='#')
     config.read(CONFIG_FILES)
     return compose_dict(config)
 
 
-def compose_dict(config: Union[Mapping, configparser.ConfigParser])->Mapping:
+def compose_dict(config):
+    # type: (Union[Mapping, configparser.ConfigParser])->ConfigDict
     return ConfigDict(compose_dict_sub(k, v) for k, v in config.items())
 
 
-def compose_dict_sub(key,  value):
+def compose_dict_sub(key, value):
+    # type: (str, Any)->Tuple[str, Any]
     if hasattr(value, 'items'):
         return (key, compose_dict(value))
     elif key.endswith('@list'):

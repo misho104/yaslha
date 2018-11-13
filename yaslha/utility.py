@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import List, MutableMapping, Any, Tuple, TypeVar, Union  # noqa: F401
+from typing import List, MutableMapping, Any, Tuple, TypeVar, Union, Sequence  # noqa: F401
 
 import yaslha
 
@@ -7,15 +7,18 @@ import yaslha
 KeyType = Union[None, int, Tuple[int, ...]]
 ValueType = Union[int, float, str, List[str]]   # SPINFO/DCINFO 3 and 4 may be multiple
 ChannelType = Tuple[int, ...]
+U = TypeVar('U', bound=KeyType)
 
 
-def _float(obj: Any)->float:
+def _float(obj):
+    # type: (Any)->float
     if isinstance(obj, str):
         obj = obj.replace('d', 'e').replace('D', 'E')
     return float(obj)
 
 
-def _clean(obj: Any)->Any:
+def _clean(obj):
+    # type: (Any)->Any
     if isinstance(obj, OrderedDict):
         return OrderedDict((k, _clean(v)) for k, v in obj.items()
                            if not (v is None or (hasattr(v, '__len__') and len(v) == 0)))
@@ -28,7 +31,8 @@ def _clean(obj: Any)->Any:
         return obj
 
 
-def _flatten(obj: List, level: int=-1)->List:
+def _flatten(obj, level=-1):
+    # type: (Sequence[Any], int)->List[Any]
     return [element
             for item in obj
             for element in (_flatten(item, level-1)
@@ -46,7 +50,8 @@ BLOCKS_DEFAULT_ORDER = [
 ]   # type: List[str]
 
 
-def sort_blocks_default(block_names: List[str]) -> List[str]:
+def sort_blocks_default(block_names):
+    # type: (List[str])->List[str]
     """Sort block names according to specified order."""
     result = []
     block_names = [n.upper() for n in block_names]
@@ -63,12 +68,9 @@ def sort_blocks_default(block_names: List[str]) -> List[str]:
 PID_GROUPS = ['sm', 'gluino', 'sq-up', 'sq-down', 'neut', 'char', 'slep', 'snu', 'susy', 'others', 'not_int']
 
 
-T = TypeVar('T', bound=KeyType)
-
-
-def sort_pids_default(pids: List[T]) -> List[Union[T, int]]:
+def sort_pids_default(pids: List[U]) -> List[Union[U, int]]:
     """Sort block names according to specified order."""
-    tmp = dict((key, []) for key in PID_GROUPS)  # type: MutableMapping[str, List[Union[T, int]]]
+    tmp = dict((key, []) for key in PID_GROUPS)  # type: MutableMapping[str, List[Union[U, int]]]
 
     for i in pids:
         if not isinstance(i, int):
@@ -100,14 +102,18 @@ def sort_pids_default(pids: List[T]) -> List[Union[T, int]]:
     return [pid for group in PID_GROUPS for pid in sorted(tmp[group])]
 
 
-def copy_sorted_decay_block(decay: 'yaslha.Decay', sort_by_br=True)->'yaslha.Decay':
-    def ordering(pid: int)->Tuple[int, ...]:
+def copy_sorted_decay_block(decay, sort_by_br=True):
+    # type: (yaslha.Decay, bool)->yaslha.Decay
+    def ordering(pid):
+        # type: (int)->Tuple[int, int, int]
         return (abs(pid) < 1000000, abs(pid), pid < 0)  # SUSY first, smaller first, positive first
 
-    def ch_sorted(ch: ChannelType)->ChannelType:
+    def ch_sorted(ch):
+        # type: (ChannelType)->ChannelType
         return tuple(sorted(ch, key=lambda pid: ordering(pid)))
 
-    def sort_key(ch: ChannelType)->List[int]:
+    def sort_key(ch):
+        # type: (ChannelType)->List[int]
         return _flatten([len(ch), [ordering(pid) for pid in ch]])
 
     ch_mapping = [(ch, ch_sorted(ch), br) for ch, br in decay.items_br()]

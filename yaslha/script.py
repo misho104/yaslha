@@ -2,7 +2,7 @@ import enum
 import logging
 import re
 import sys
-from typing import List
+from typing import Any, List, MutableMapping, Optional, Sequence, Union, Type  # noqa: F401
 
 import click
 
@@ -19,11 +19,16 @@ __version__ = yaslha.__version__
 ACCEPTED_TYPES = ['SLHA', 'YAML', 'JSON']  # decided to use capital letters
 
 
+ChoiceType = Union[str, enum.Enum]
+
+
 class CaseInsensitiveChoice(click.Choice):
     # TODO: use upcoming `case_insensitive` feature
     # https://github.com/pallets/click/pull/887/commits/138a6e3ad1dbe657e09717bc05ebfbc535f4770d
+
     def __init__(self, choices):
-        self.keys = dict()
+        # type: (Union[Sequence[str], Type[enum.Enum]])->None
+        self.keys = dict()  # type: MutableMapping[str, ChoiceType]
         for c in choices:
             if isinstance(c, enum.Enum):
                 self.keys[c.name.upper()] = c
@@ -32,6 +37,7 @@ class CaseInsensitiveChoice(click.Choice):
         super().__init__(self.keys.keys())
 
     def convert(self, value, param, ctx):
+        # type: (str, Optional[click.core.Parameter], Optional[click.core.Context])-> ChoiceType
         return self.keys[super().convert(value.upper(), param, ctx)]
 
 
@@ -57,6 +63,7 @@ class CaseInsensitiveChoice(click.Choice):
 @click.version_option(__version__, '-V', '--version', prog_name=yaslha.__pkgname__ + '/converter')
 # @click.option('-v', '--verbose', is_flag=True, default=False, help="Show verbose output")
 def convert(**kwargs):
+    # type: (Any)->None
     # TODO: use 'input-type' option
     # input_type = kwargs['input_type'] or 'Auto'
     output_type = kwargs['output_type'] or 'SLHA'
@@ -87,6 +94,7 @@ def convert(**kwargs):
 @click.version_option(__version__, '-V', '--version', prog_name=yaslha.__pkgname__ + '/merger')
 @click.pass_context  # for help
 def merge(ctx, **kwargs):
+    # type: (click.core.Context, Any)->None
     slha = yaslha.SLHA()
     for i in kwargs['input']:
         with open(i) as f:
@@ -113,6 +121,7 @@ def merge(ctx, **kwargs):
 @click.version_option(__version__, '-V', '--version', prog_name=yaslha.__pkgname__ + '/extractor')
 @click.pass_context  # for help
 def extract(ctx, **kwargs):
+    # type: (click.core.Context, Any)->None
     blocks = kwargs['blocks'].split(',')
     if not blocks:
         click.echo('No blocks specified.')

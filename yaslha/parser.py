@@ -1,4 +1,4 @@
-from typing import Union, List  # noqa: F401
+from typing import Union, List, Tuple, cast, Any  # noqa: F401
 
 import yaslha
 import yaslha.exceptions as exceptions
@@ -10,10 +10,12 @@ SLHAParserStatesType = Union[None, 'yaslha.Block', 'yaslha.Decay']
 
 
 class SLHAParser:
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
+        # type: (Any)->None
         pass
 
-    def in_info_block(self, block_obj: 'yaslha.Block')->bool:
+    def in_info_block(self, block_obj):
+        # type: (yaslha.Block)->bool
         """Method to decide if a block is an "info block" or not.
 
         Info blocks accepts only "InfoLine"s (1x,I5,3x,A), which have
@@ -22,7 +24,8 @@ class SLHAParser:
         """
         return isinstance(block_obj, yaslha.Block) and block_obj.name.endswith('INFO')
 
-    def parse(self, text: str)->'yaslha.SLHA':
+    def parse(self, text):
+        # type: (str)->yaslha.SLHA
         """Parse SLHA format text."""
 
         processing = None        # type: SLHAParserStatesType
@@ -59,10 +62,12 @@ class SLHAParser:
             elif obj:
                 # data line
                 if isinstance(processing, yaslha.Block) and self.in_info_block(processing):
-                    # fill info block
+                    # fill INFO block
                     if isinstance(obj, yaslha.line.InfoLine):
                         if obj.key in processing:
-                            processing.get_line_obj(obj.key).append(obj.value, obj.comment)
+                            line_obj = processing.get_line_obj(obj.key)
+                            assert(isinstance(line_obj, yaslha.line.InfoLine))
+                            line_obj.append(obj.value, obj.comment)
                         else:
                             processing[obj.key] = obj
                     else:
@@ -75,7 +80,7 @@ class SLHAParser:
                 elif isinstance(processing, yaslha.Decay):
                     # fill decay block
                     if isinstance(obj, yaslha.line.DecayLine):
-                        processing[obj.key] = obj
+                        processing[cast(Tuple[int], obj.key)] = obj
                     else:
                         exceptions.InvalidFormatWarning(line, 'Decay {}'.format(processing.pid)).call()
 

@@ -1,5 +1,5 @@
 import pathlib
-from typing import Union, Mapping  # noqa: F401
+from typing import Union, Mapping, Any, Optional  # noqa: F401
 
 import yaslha.config
 import yaslha.parser
@@ -15,7 +15,8 @@ __license__ = 'MIT'
 cfg = yaslha.config.read_config()  # type: Mapping
 
 
-def parse(text: Union[str, pathlib.Path], **kwargs)->SLHA:
+def parse(text, **kwargs):
+    # type: (Union[str, pathlib.Path], Any)->SLHA
     if isinstance(text, pathlib.Path):
         with open(str(text)) as f:
             text = f.read()
@@ -23,7 +24,8 @@ def parse(text: Union[str, pathlib.Path], **kwargs)->SLHA:
     return parser.parse(text)
 
 
-def dump(data: SLHA, output_type=None, dumper=None, **kwargs)->str:
+def dump(data, output_type='', dumper=None, **kwargs):
+    # type: (SLHA, str, Optional[yaslha.dumper.AbsDumper], Any)->str
     if dumper is None:
         if output_type.upper() == 'JSON':
             dumper = yaslha.dumper.JSONDumper(**kwargs)
@@ -34,12 +36,14 @@ def dump(data: SLHA, output_type=None, dumper=None, **kwargs)->str:
     return data.dump(dumper=dumper)
 
 
-def parse_file(path: Union[str, pathlib.Path], **kwargs)->SLHA:
+def parse_file(path, **kwargs):
+    # type: (Union[str, pathlib.Path], Any)->SLHA
     if isinstance(path, str):
         path = pathlib.Path(path)
     return parse(path, **kwargs)
 
 
-def dump_file(data: SLHA, path: Union[str, pathlib.Path], **kwargs)->None:
+def dump_file(data, path, **kwargs):
+    # type: (SLHA, Union[str, pathlib.Path], Any)->None
     with open(str(path), 'w') as f:
         f.write(dump(data, **kwargs))
