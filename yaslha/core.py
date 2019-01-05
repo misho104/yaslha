@@ -43,6 +43,16 @@ class SLHA:
                               else yaslha.line.CommentLine(v)
                               for v in value]
 
+    def __getitem__(self, block_name_or_decay_pid):
+        # type: (Union[str, int])->Union[Block, Decay]
+        if isinstance(block_name_or_decay_pid, str):
+            name = block_name_or_decay_pid.upper()
+            return self.blocks[name]
+        elif isinstance(block_name_or_decay_pid, int):
+            return self.decays[block_name_or_decay_pid]
+        else:
+            raise TypeError
+
     def get(self, block_name, key=None, default=None):
         # type: (str, KeyType, Optional[ValueType])->Optional[ValueType]
         block_name = block_name.upper()
@@ -342,11 +352,7 @@ class Decay:
             del self._comment_lines[position]
 
     # getter
-    def __getitem__(self, channel):
-        # type: (ChannelType)->float
-        return self._data[channel].width / self.width
-
-    def get_br(self, channel):
+    def br(self, channel):
         # type: (ChannelType)->float
         if channel in self._data:
             # TODO: write a good method to chop after 1+8 digits
@@ -354,7 +360,7 @@ class Decay:
         else:
             return 0.0
 
-    def get_partial_width(self, channel):
+    def partial_width(self, channel):
         # type: (ChannelType)->float
         if channel in self._data:
             return self._data[channel].width
@@ -387,7 +393,7 @@ class Decay:
         dumped_line_comment = set()
         for ch, value in self._data.items():
             result[ch] = cast(List[yaslha.line.AbsLine], self.line_comment(ch)) if with_comment_lines else []
-            result[ch].append(yaslha.line.DecayLine(br=self.get_br(ch), channel=ch, comment=self.comment(ch)))
+            result[ch].append(yaslha.line.DecayLine(br=self.br(ch), channel=ch, comment=self.comment(ch)))
             dumped_line_comment.add(ch)
 
         if with_comment_lines:
@@ -430,7 +436,7 @@ class Decay:
         if old not in self or (new != old and new in self):
             raise KeyError
 
-        old_br = self[old]
+        old_br = self.br(old)
         old_comment = self.comment(old) or ''
         old_line_comment = self.line_comment(old)
 
