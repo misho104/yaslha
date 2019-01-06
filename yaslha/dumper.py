@@ -291,7 +291,7 @@ class AbsMarshalDumper(AbsDumper):
         super().__init__(**kwargs)
 
     def marshal(self, slha):
-        # type: (yaslha.SLHA)->Mapping
+        # type: (yaslha.SLHA)->Mapping[str, Any]
         result = _clean(OrderedDict([
             ('FORMAT', OrderedDict([
                 ('TYPE', 'SLHA'),
@@ -302,7 +302,7 @@ class AbsMarshalDumper(AbsDumper):
             ('DECAY', OrderedDict([(d.pid, self.marshal_decay(d)) for d in self._decays_sorted(slha)])),
             ('tail_comment', [v.line for v in slha.tail_comment] if self.comments_preserve.keep_line() else []),
         ]))
-        return cast(Mapping, result)
+        return cast(Mapping[str, Any], result)
 
     def marshal_block(self, block: 'yaslha.Block')->Mapping[Any, Any]:
         data = OrderedDict([('info', None),

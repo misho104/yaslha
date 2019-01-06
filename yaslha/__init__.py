@@ -12,7 +12,7 @@ __version__ = '0.0.6'
 __author__ = 'Sho Iwamoto / Misho'
 __license__ = 'MIT'
 
-cfg = yaslha.config.read_config()  # type: Mapping
+cfg = yaslha.config.read_config()  # type: Mapping[str, Any]
 
 
 def parse(text, **kwargs):

@@ -50,7 +50,7 @@ def guess_type(value):
 
 class AbsLine:
     IN = NotImplemented  # type: str
-    IN_PATTERN = None    # type: Pattern
+    IN_PATTERN = None    # type: Pattern[str]
     # IN_PATTERN is filled later
 
     def __init__(self, **kwargs):

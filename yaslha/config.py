@@ -36,7 +36,7 @@ def read_config():
 
 
 def compose_dict(config):
-    # type: (Union[Mapping, configparser.ConfigParser])->ConfigDict
+    # type: (Union[Mapping[str, Any], configparser.ConfigParser])->ConfigDict
     return ConfigDict(compose_dict_sub(k, v) for k, v in config.items())
 
 
