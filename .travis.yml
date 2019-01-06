@@ -1,18 +1,36 @@
 sudo: false
-
+cache: pip
 language: python
-python:
-  - "3.4"
-  - "3.5"
-  - "3.6"
-    #  - "3.7"
+
+before_install:
+  - pip install poetry
 
 install:
-  - python setup.py install
-  - pip install nose coverage mypy flake8 coveralls
+  - poetry install --develop=yaslha
+
+stages:
+  - test
+  - typecheck
+  - linting
 
 script:
   - nosetests --config="" --cover-package=yaslha --with-coverage
-  - mypy --strict yaslha/*.py
-  - flake8 --max-line-length=120 .
   - coveralls
+
+jobs:
+  include:
+    - python: "3.4"
+    - python: "3.5"
+    - python: "3.6"
+    - python: "3.7"
+      dist: xenial
+
+    - stage: typecheck
+      python: "3.6"
+      script:
+        - mypy --strict yaslha/*.py
+
+    - stage: lint
+      python: "3.6"
+      script:
+        - flake8 --max-line-length=120
