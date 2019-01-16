@@ -1,6 +1,6 @@
 from collections import OrderedDict
 import copy
-from typing import cast, Tuple, Optional, Union, List, MutableMapping, Sequence, KeysView  # noqa: F401
+from typing import cast, Tuple, Optional, Union, List, MutableMapping, Sequence, KeysView, overload  # noqa: F401
 
 import yaslha.dumper
 import yaslha.exceptions as exceptions
@@ -42,6 +42,14 @@ class SLHA:
         self._tail_comment = [v if isinstance(v, yaslha.line.CommentLine)
                               else yaslha.line.CommentLine(v)
                               for v in value]
+
+    @overload
+    def __getitem__(self, block_name):  # type: (str)->Block
+        ...
+
+    @overload
+    def __getitem__(self, decay_pid):  # type: (int)->Decay
+        ...
 
     def __getitem__(self, block_name_or_decay_pid):
         # type: (Union[str, int])->Union[Block, Decay]
