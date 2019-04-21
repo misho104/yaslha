@@ -3,8 +3,7 @@ import pathlib
 import traceback
 import unittest
 import warnings
-from typing import List, Tuple, Union
-from click.testing import CliRunner, Result
+from click.testing import CliRunner
 from nose.tools import raises, ok_, eq_  # noqa: F401
 
 from yaslha.script import convert
@@ -12,13 +11,13 @@ import yaslha.dumper
 logger = logging.getLogger('test_info')
 
 
-def check_and_separate_output(result: Result)->Tuple[List[str], List[str]]:
+def check_and_separate_output(result):
     if result.exit_code != 0:
         traceback.print_tb(result.exc_info[2])
     eq_(result.exit_code, 0)
 
-    stdout = []  # type: List[str]
-    stderr = []  # type: List[str]
+    stdout = []
+    stderr = []
     for i in result.output.splitlines():
         if i.startswith('STDERR:::'):
             stderr.append(i[9:])
@@ -27,7 +26,7 @@ def check_and_separate_output(result: Result)->Tuple[List[str], List[str]]:
     return stdout, stderr
 
 
-def compare_lines(a: Union[str, List[str]], b: Union[str, List[str]])->None:
+def compare_lines(a, b):
     if isinstance(a, str):
         return compare_lines(a.splitlines(), b)
     if isinstance(b, str):
