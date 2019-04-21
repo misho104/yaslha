@@ -1,14 +1,14 @@
+import configparser
 import enum
 import os
 import pathlib
-import configparser
-from typing import Mapping, Union, Dict, Any, TypeVar, Tuple, Optional  # noqa: F401
-
+from typing import Any, Dict, Mapping, Optional, Tuple, TypeVar, Union  # noqa: F401
 
 CONFIG_FILES = [
-    str(pathlib.Path(__file__).with_name('yaslha.cfg.default')),
-    os.path.expanduser('~/.yaslha.cfg'),
-    'yaslha.cfg']  # latter overrides former
+    str(pathlib.Path(__file__).with_name("yaslha.cfg.default")),
+    os.path.expanduser("~/.yaslha.cfg"),
+    "yaslha.cfg",
+]  # latter overrides former
 
 
 class ConfigDict(Dict[str, Any]):
@@ -23,14 +23,18 @@ class ConfigDict(Dict[str, Any]):
                     c = i
             configuration = c or list(typ)[0]
         elif typ == bool:
-            configuration = False if configuration.lower() in ['false', 'None', '0'] else bool(configuration)
+            configuration = (
+                False
+                if configuration.lower() in ["false", "None", "0"]
+                else bool(configuration)
+            )
 
         return configuration if override is None else override
 
 
 def read_config():
     # type: ()->ConfigDict
-    config = configparser.ConfigParser(inline_comment_prefixes='#')
+    config = configparser.ConfigParser(inline_comment_prefixes="#")
     config.read(CONFIG_FILES)
     return compose_dict(config)
 
@@ -42,9 +46,9 @@ def compose_dict(config):
 
 def compose_dict_sub(key, value):
     # type: (str, Any)->Tuple[str, Any]
-    if hasattr(value, 'items'):
+    if hasattr(value, "items"):
         return (key, compose_dict(value))
-    elif key.endswith('@list'):
-        return key[:-5], [v for v in value.split(' ') if v] if value else []
+    elif key.endswith("@list"):
+        return key[:-5], [v for v in value.split(" ") if v] if value else []
     else:
         return key, value

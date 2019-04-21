@@ -1,12 +1,11 @@
-from typing import Union, List, Tuple, cast, Any  # noqa: F401
+from typing import Any, List, Tuple, Union, cast  # noqa: F401
 
 import yaslha
 import yaslha.exceptions as exceptions
 import yaslha.line
 from yaslha.line import CommentPosition
 
-
-SLHAParserStatesType = Union[None, 'yaslha.Block', 'yaslha.Decay']
+SLHAParserStatesType = Union[None, "yaslha.Block", "yaslha.Decay"]
 
 
 class SLHAParser:
@@ -22,14 +21,14 @@ class SLHAParser:
         one (and only one) index followed by any string. InfoLines are
         not accepted by any other blocks.
         """
-        return isinstance(block_obj, yaslha.Block) and block_obj.name.endswith('INFO')
+        return isinstance(block_obj, yaslha.Block) and block_obj.name.endswith("INFO")
 
     def parse(self, text):
         # type: (str)->yaslha.SLHA
         """Parse SLHA format text."""
 
-        processing = None        # type: SLHAParserStatesType
-        comment = list()         # type: List[yaslha.line.CommentLine]
+        processing = None  # type: SLHAParserStatesType
+        comment = list()  # type: List[yaslha.line.CommentLine]
         slha = yaslha.SLHA()
 
         for line in text.splitlines():
@@ -61,17 +60,21 @@ class SLHAParser:
 
             elif obj:
                 # data line
-                if isinstance(processing, yaslha.Block) and self.in_info_block(processing):
+                if isinstance(processing, yaslha.Block) and self.in_info_block(
+                    processing
+                ):
                     # fill INFO block
                     if isinstance(obj, yaslha.line.InfoLine):
                         if obj.key in processing:
                             line_obj = processing.get_line_obj(obj.key)
-                            assert(isinstance(line_obj, yaslha.line.InfoLine))
+                            assert isinstance(line_obj, yaslha.line.InfoLine)
                             line_obj.append(obj.value, obj.comment)
                         else:
                             processing[obj.key] = obj
                     else:
-                        exceptions.InvalidFormatWarning(line, 'InfoBlock ' + processing.name).call()
+                        exceptions.InvalidFormatWarning(
+                            line, "InfoBlock " + processing.name
+                        ).call()
 
                 elif isinstance(processing, yaslha.Block):
                     # fill usual block
@@ -82,7 +85,9 @@ class SLHAParser:
                     if isinstance(obj, yaslha.line.DecayLine):
                         processing[cast(Tuple[int], obj.key)] = obj
                     else:
-                        exceptions.InvalidFormatWarning(line, 'Decay {}'.format(processing.pid)).call()
+                        exceptions.InvalidFormatWarning(
+                            line, "Decay {}".format(processing.pid)
+                        ).call()
 
                 else:
                     exceptions.OrphanLineWarning(line).call()

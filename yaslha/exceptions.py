@@ -1,13 +1,14 @@
 import warnings
-from typing import Optional, Type, List  # noqa: F401
-from yaslha.utility import KeyType  # noqa: F401
+from typing import List, Optional, Type  # noqa: F401
+
 import yaslha.line  # noqa: F401
+from yaslha.utility import KeyType  # noqa: F401
 
 
 def formatwarning(message, category, filename, lineno, line=None):
     # type: (str, Type[Warning], str, Optional[int], Optional[str])->str
     # simplify warning-message format
-    return ('%s: %s\n' % (category.__name__, message))
+    return "%s: %s\n" % (category.__name__, message)
 
 
 warnings.formatwarning = formatwarning
@@ -24,7 +25,7 @@ class InvalidInfoBlockError(ParseError):
 
     def __str__(self):
         # type: ()->str
-        return 'INFO block must have (only) one KEY: {}'.format(self.actual)
+        return "INFO block must have (only) one KEY: {}".format(self.actual)
 
 
 class ParseWarning(UserWarning):
@@ -54,14 +55,14 @@ class OrphanLineWarning(ParseWarning):
 
 
 class InvalidFormatWarning(ParseWarning):
-    def __init__(self, line, block_title=''):
+    def __init__(self, line, block_title=""):
         # type: (str, str)->None
         self.line = line
         self.block_title = block_title
 
     def __str__(self):
         # type: ()->str
-        block_info = 'in ' + self.block_title if self.block_title else ''
+        block_info = "in " + self.block_title if self.block_title else ""
         return 'Ignored {}"{}"'.format(block_info, self.line)
 
 
