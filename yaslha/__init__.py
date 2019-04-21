@@ -1,24 +1,32 @@
-import pathlib
-from typing import Any, Mapping, Optional, Union  # noqa: F401
+"""Package to handle SLHA-format files and data."""
 
+import pathlib
+from typing import Any, Optional, Union
+
+import yaslha.block
+import yaslha.comment
 import yaslha.config
 import yaslha.dumper
+import yaslha.line
 import yaslha.parser
-from yaslha.core import SLHA, Block, Decay  # noqa: F401
+import yaslha.slha
 
 __pkgname__ = "yaslha"
 __version__ = "0.1.0"
 __author__ = "Sho Iwamoto / Misho"
 __license__ = "MIT"
 
-cfg = yaslha.config.read_config()  # type: Mapping[str, Any]
+SLHA = yaslha.slha.SLHA
+Block = yaslha.block.Block
+InfoBlock = yaslha.block.InfoBlock
+Decay = yaslha.block.Decay
+
+cfg = yaslha.config.Config()
 
 
 def parse(text, input_type="AUTO", parser=None, **kwargs):
-    # type: (Union[str, pathlib.Path], str, Any, Any)->SLHA
-    if isinstance(text, pathlib.Path):
-        with open(str(text)) as f:
-            text = f.read()
+    # type: (str, str, Any, Any)->SLHA
+    """Parse a text to return an SLHA object."""
     if parser is None:
         if input_type.upper() == "AUTO":
             # TODO: implement auto-parser
@@ -32,8 +40,9 @@ def parse(text, input_type="AUTO", parser=None, **kwargs):
     return parser.parse(text)
 
 
-def dump(data, output_type="", dumper=None, **kwargs):
+def dump(slha, output_type="SLHA", dumper=None, **kwargs):
     # type: (SLHA, str, Optional[yaslha.dumper.AbsDumper], Any)->str
+    """Output a dumped string of an SLHA object."""
     if dumper is None:
         if output_type.upper() == "JSON":
             dumper = yaslha.dumper.JSONDumper(**kwargs)
@@ -41,17 +50,19 @@ def dump(data, output_type="", dumper=None, **kwargs):
             dumper = yaslha.dumper.YAMLDumper(**kwargs)
         else:
             dumper = yaslha.dumper.SLHADumper(**kwargs)
-    return data.dump(dumper=dumper)
+    return dumper.dump(slha)
 
 
 def parse_file(path, **kwargs):
     # type: (Union[str, pathlib.Path], Any)->SLHA
+    """Parse a file to return an SLHA object."""
     if isinstance(path, str):
         path = pathlib.Path(path)
-    return parse(path, **kwargs)
+    return parse(path.read_text(), **kwargs)
 
 
 def dump_file(data, path, **kwargs):
     # type: (SLHA, Union[str, pathlib.Path], Any)->None
+    """Write into a file a dumped string of an SLHA object."""
     with open(str(path), "w") as f:
         f.write(dump(data, **kwargs))

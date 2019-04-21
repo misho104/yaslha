@@ -11,6 +11,8 @@ repository = "https://github.com/misho104/yaslha"
 python = "^3.5"
 click = "^7.0"
 "ruamel.yaml" = "^0.15"
+colorama = "^0.4"
+coloredlogs = "^10.0"
 typing-extensions = "^3.7"
 
 [tool.poetry.dev-dependencies]
@@ -21,9 +23,7 @@ flake8 = "^3.6"
 coveralls = "^1.5"
 
 [tool.poetry.scripts]
-yaslha-convert = "yaslha.script:convert"
-yaslha-merge = "yaslha.script:merge"
-yaslha-extract = "yaslha.script:extract"
+yaslha= "yaslha.script:main"
 
 [build-system]
 requires = ["poetry>=0.12"]

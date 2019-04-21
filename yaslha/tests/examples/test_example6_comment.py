@@ -48,7 +48,7 @@ Block hmix Q= 4.64649125e+02
      3     2.44923506e+02
      4     1.69697051e+04
 #
-#         PDG           Width
+#         PDG        Width
 DECAY   1000023     1.95831641E-02   # chi_20
 #    BR                NDA      ID1      ID2
      3.38444885E-02    2    -2000011        11   # BR(chi_20 -> ~e_R+ e- )
@@ -62,7 +62,7 @@ DECAY   1000023     1.95831641E-02   # chi_20
      1.75499602E-04    3     1000022         2        -2   # BR(chi_20 -> chi_10 u u )
      1.75229451E-04    3     1000022         4        -4   # BR(chi_20 -> chi_10 c c )
      2.33949042E-04    3     1000022         1        -1   # BR(chi_20 -> chi_10 d d )
-# comment at SLHA-tail
+#comment at SLHA-tail
 """
 
     def setUp(self):
@@ -73,8 +73,8 @@ DECAY   1000023     1.95831641E-02   # chi_20
         # simple examples of pre-head, head, and line comments
 
         # pre-head comment is always List[str]
-        eq_(self.slha["modsel"].comment.pre["head"], ["Input parameters"])
-        eq_(self.slha["spinfo"].comment.pre["head"], ["SLHA 1.0", "calculator"])
+        eq_(self.slha["modsel"].comment.pre["head"], ["# Input parameters"])
+        eq_(self.slha["spinfo"].comment.pre["head"], ["# SLHA 1.0", "# calculator"])
 
         # head comment is always str
         eq_(self.slha["modsel"].comment["head"], "Select model")
@@ -88,20 +88,20 @@ DECAY   1000023     1.95831641E-02   # chi_20
 
         # another method to access
         modsel = self.slha["modsel"]
-        eq_(modsel.comment.pre["head"], ["Input parameters"])
+        eq_(modsel.comment.pre["head"], ["# Input parameters"])
         eq_(modsel.comment["head"], "Select model")
         eq_(modsel.comment[1], "sugra")
 
         # comments between lines are recognized as "pre" comments of the next lines.
         minpar = self.slha["minpar"]
-        eq_(minpar.comment.pre[1], ["comment between lines (1)"])  # always List[str]
-        eq_(minpar.comment.pre[3], ["comment between lines (2)"])
+        eq_(minpar.comment.pre[1], ["# comment between lines (1)"])  # always List[str]
+        eq_(minpar.comment.pre[3], ["# comment between lines (2)"])
 
         # comments after block are recognized as pre-block comments of the next blocks.
-        eq_(self.slha["mass"].comment.pre["head"], ["comment after minpar"])
+        eq_(self.slha["mass"].comment.pre["head"], ["# comment after minpar"])
 
         # the comment at the end of file is specially treated
-        eq_(self.slha.tail_comment, ["comment at SLHA-tail"])  # always List[str]
+        eq_(self.slha.tail_comment, ["#comment at SLHA-tail"])  # always List[str]
 
         # empty string (or empty list) is returned if comment does not exist.
         eq_(self.slha["hmix"].comment.pre["head"], [])
@@ -111,10 +111,10 @@ DECAY   1000023     1.95831641E-02   # chi_20
 
     def test_read_2(self):
         # for decay blocks
-        eq_(self.slha[1000023].comment.pre["head"], ["", "        PDG           Width"])
+        eq_(self.slha[1000023].comment.pre["head"], ["#", "#         PDG        Width"])
         eq_(
             self.slha[1000023].comment.pre[11, -2000011],
-            ["   BR                NDA      ID1      ID2"],
+            ["#    BR                NDA      ID1      ID2"],
         )
         eq_(self.slha[1000023].comment[11, -2000011], "BR(chi_20 -> ~e_R+ e- )")
 

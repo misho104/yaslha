@@ -1,3 +1,5 @@
+"""Scripts of this package."""
+
 import enum
 import logging
 import re
@@ -5,6 +7,7 @@ import sys
 from typing import (  # noqa: F401
     Any,
     List,
+    Mapping,
     MutableMapping,
     Optional,
     Sequence,
@@ -13,111 +16,102 @@ from typing import (  # noqa: F401
 )
 
 import click
+import coloredlogs
 
 import yaslha
 import yaslha.dumper
 
-logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
-__scriptname__ = yaslha.__pkgname__ + "/converter"
-__version__ = yaslha.__version__
 
 ACCEPTED_TYPES = ["SLHA", "YAML", "JSON"]  # decided to use capital letters
 
 
-ChoiceType = Union[str, enum.Enum]
-
-
-class CaseInsensitiveChoice(click.Choice):
-    # TODO: use upcoming `case_insensitive` feature
-    # https://github.com/pallets/click/pull/887/commits/138a6e3ad1dbe657e09717bc05ebfbc535f4770d
-
-    def __init__(self, choices):
-        # type: (Union[Sequence[str], Type[enum.Enum]])->None
-        self.keys = dict()  # type: MutableMapping[str, ChoiceType]
-        for c in choices:
-            if isinstance(c, enum.Enum):
-                self.keys[c.name.upper()] = c
-            else:
-                self.keys[c.upper()] = c
+class _Choice(click.Choice):
+    def __init__(self, choices: Union[Sequence[str], Type[enum.Enum]]) -> None:
+        if isinstance(choices, enum.EnumMeta):
+            self.keys = {c.name.upper(): c for c in choices}  # type: ignore
+        else:
+            self.keys = {c.upper(): c.upper() for c in choices}
         super().__init__(self.keys.keys())
 
-    def convert(self, value, param, ctx):
-        # type: (str, Optional[click.core.Parameter], Optional[click.core.Context])-> ChoiceType
+    def convert(self, value, param, ctx):  # type: ignore
         return self.keys[super().convert(value.upper(), param, ctx)]
 
 
-@click.command(
-    help="Convert SLHA from/to YAML and JSON",
-    context_settings=dict(help_option_names=["-h", "--help"]),
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+@click.version_option(
+    yaslha.__version__, "-V", "--version", prog_name=yaslha.__pkgname__
 )
+def main() -> None:
+    """Handle SLHA format data."""
+    coloredlogs.install(logger=logging.getLogger(), fmt="%(levelname)8s %(message)s")
+
+
+@main.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.option(
     "--input-type",
-    type=CaseInsensitiveChoice(["Auto"] + ACCEPTED_TYPES),
-    default="Auto",
+    type=_Choice(["AUTO", *ACCEPTED_TYPES]),
+    default="AUTO",
     show_default=True,
     help="(JSON/YAML input is not yet implemented.)",
+    hidden=True,  # until other parsers are implemented
 )
 @click.option(
     "--output-type",
-    type=CaseInsensitiveChoice(ACCEPTED_TYPES),
+    type=_Choice(ACCEPTED_TYPES),
     default="SLHA",
     show_default=True,
+    help="Output format.",
 )
 @click.argument("input", type=click.Path(exists=True, dir_okay=False), required=False)
 @click.argument("output", type=click.Path(dir_okay=False), required=False)
-@click.option(
-    "-S", "input_type", flag_value="SLHA", help="synonym of --input-type=SLHA"
-)
-@click.option("-J", "input_type", flag_value="JSON", help="(not implemented)")
-@click.option("-Y", "input_type", flag_value="YAML", help="(not implemented)")
-@click.option(
-    "-s", "output_type", flag_value="SLHA", help="synonym of --output-type=SLHA"
-)
-@click.option(
-    "-j", "output_type", flag_value="JSON", help="synonym of --output-type=JSON"
-)
-@click.option(
-    "-y", "output_type", flag_value="YAML", help="synonym of --output-type=YAML"
-)
+@click.option("-S", "input_type", flag_value="SLHA", hidden=True)
+@click.option("-J", "input_type", flag_value="JSON", hidden=True)
+@click.option("-Y", "input_type", flag_value="YAML", hidden=True)
+@click.option("-s", "output_type", flag_value="SLHA", hidden=True)
+@click.option("-j", "output_type", flag_value="JSON", hidden=True)
+@click.option("-y", "output_type", flag_value="YAML", hidden=True)
 @click.option(
     "--comments",
-    type=CaseInsensitiveChoice(yaslha.dumper.CommentsPreserve),
+    type=_Choice(yaslha.dumper.CommentsPreserve),
     default="NONE",
-    help="comments to be kept",
     show_default=True,
+    help="Comment types to keep.",
 )
 @click.option(
     "--blocks",
-    type=CaseInsensitiveChoice(yaslha.dumper.BlocksOrder),
+    type=_Choice(yaslha.dumper.BlocksOrder),
     default="DEFAULT",
-    help="Order of SLHA blocks",
+    help="Order of blocks.",
 )
 @click.option(
     "--values",
-    type=CaseInsensitiveChoice(yaslha.dumper.ValuesOrder),
+    type=_Choice(yaslha.dumper.ValuesOrder),
     default="DEFAULT",
-    help="Order of values",
+    help="Order of values.",
 )
-@click.version_option(
-    __version__, "-V", "--version", prog_name=yaslha.__pkgname__ + "/converter"
-)
-# @click.option('-v', '--verbose', is_flag=True, default=False, help="Show verbose output")
 def convert(**kwargs):
     # type: (Any)->None
-    input_type = kwargs["input_type"] or "Auto"
+    """Convert or reformat SLHA data files.
+
+    Currently this package converts SLHA input to SLHA, JSON, or YAML format.
+    Text from the standard input (STDIN) is used if no file is specified.
+    Shorthanded options -s -y -j are available for --output-type option.
+    """
+    input_type = kwargs["input_type"] or "AUTO"
     output_type = kwargs["output_type"] or "SLHA"
 
     if kwargs["input"]:
         with open(kwargs["input"]) as f:
             input_string = f.read()
     else:
+        logger.warning("Reading from STDIN...")
         input_string = sys.stdin.read()
     slha = yaslha.parse(input_string, input_type=input_type)
 
     output_string = yaslha.dump(
-        data=slha,
+        slha=slha,
         output_type=output_type,
         comments_preserve=yaslha.dumper.CommentsPreserve(kwargs["comments"]),
         blocks_order=yaslha.dumper.BlocksOrder(kwargs["blocks"]),
@@ -131,25 +125,22 @@ def convert(**kwargs):
         print(output_string)
 
 
-@click.command(
-    help="Merge two SLHA files",
-    context_settings=dict(help_option_names=["-h", "--help"]),
-)
+@main.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.option(
-    "-e",
-    is_flag=True,
-    default=False,
-    help="Read from STDIN and append to the SLHA data",
+    "-e", is_flag=True, default=False, help="Read the last data to merge from STDIN." ""
 )
 @click.argument(
-    "input", nargs=-1, type=click.Path(exists=True, dir_okay=False), required=False
-)
-@click.version_option(
-    __version__, "-V", "--version", prog_name=yaslha.__pkgname__ + "/merger"
+    "input", nargs=-1, type=click.Path(exists=True, dir_okay=False), required=True
 )
 @click.pass_context  # for help
 def merge(ctx, **kwargs):
     # type: (click.core.Context, Any)->None
+    """Merge SLHA files.
+
+    Input and output are in SLHA format. Duplicated data are overwritten by
+    later files. If -e option is specified, input from standard input (STDIN)
+    is used as the last data.
+    """
     slha = yaslha.SLHA()
     for i in kwargs["input"]:
         with open(i) as f:
@@ -162,7 +153,7 @@ def merge(ctx, **kwargs):
         ctx.exit(1)
 
     output_string = yaslha.dump(
-        data=slha,
+        slha=slha,
         output_type="SLHA",
         comments_preserve=yaslha.dumper.CommentsPreserve.ALL,
         blocks_order=yaslha.dumper.BlocksOrder.KEEP,
@@ -171,18 +162,18 @@ def merge(ctx, **kwargs):
     print(output_string)
 
 
-@click.command(
-    help="Extract BLOCKS (comma-separated) from a SLHA file",
-    context_settings=dict(help_option_names=["-h", "--help"]),
-)
+@main.command(context_settings={"help_option_names": ["-h", "--help"]})
 @click.argument("blocks", type=str, required=True)
 @click.argument("input", type=click.Path(exists=True, dir_okay=False), required=False)
-@click.version_option(
-    __version__, "-V", "--version", prog_name=yaslha.__pkgname__ + "/extractor"
-)
 @click.pass_context  # for help
 def extract(ctx, **kwargs):
     # type: (click.core.Context, Any)->None
+    """Extract specified blocks from SLHA file.
+
+    BLOCKS is a comma-separated list of block names (or decay-block PIDs) to
+    extract and INPUT is the input SLHA file. If INPUT is not specified, data
+    is read from standard input (STDIN).
+    """
     blocks = kwargs["blocks"].split(",")
     if not blocks:
         click.echo("No blocks specified.")
@@ -200,13 +191,13 @@ def extract(ctx, **kwargs):
     for block in blocks:
         if re.match(r"^\d+$", block):
             try:
-                output_list.append(dumper.dump_decay(slha.decays[block]))
+                output_list.append(dumper.dump_block(slha.decays[int(block)]))
             except KeyError:
                 click.echo("DECAY block for PID {} not found.".format(block))
                 exit(1)
         else:
             try:
-                output_list.append(dumper.dump_block(slha.blocks[block.upper()]))
+                output_list.append(dumper.dump_block(slha.blocks[block]))
             except KeyError:
                 click.echo("Block {} not found".format(block.upper()))
                 exit(1)
