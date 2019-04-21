@@ -12,7 +12,6 @@ from yaslha.script import convert
 
 logger = logging.getLogger("test_info")
 
-
 def check_and_separate_output(result):
     if result.exit_code != 0:
         traceback.print_tb(result.exc_info[2])
