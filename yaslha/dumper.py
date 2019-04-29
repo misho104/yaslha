@@ -249,7 +249,9 @@ class SLHADumper(AbsDumper):
         # special spacing for MASS block
         if isinstance(block, yaslha.block.Block) and block.name == "MASS":
             re_mass = re.compile(r"^\s*(\d+)")
-            lines = [re_mass.sub(lambda x: " {:>9}".format(x[1]), i) for i in lines]
+            lines = [
+                re_mass.sub(lambda x: " {:>9}".format(x.group(1)), i) for i in lines
+            ]
 
         return self._document_out(lines) if document_block else lines
 
