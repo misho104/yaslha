@@ -51,12 +51,10 @@ KTG = TypeVar("KTG", KeyType, InfoKeyType, DecayKeyType)
 class GenericBlock(Generic[KTG, CT], metaclass=ABCMeta):
     """Block-like object containing comments."""
 
-    head: Union[BlockHeadLine, DecayHeadLine]
-    _comment: CommentInterface[KTG, CT]
-
     @abstractmethod
     def __init__(self) -> None:
-        self._comment = CommentInterface(self)
+        self.head = NotImplemented  # type: Union[BlockHeadLine, DecayHeadLine]
+        self._comment = CommentInterface(self)  # type: CommentInterface[KTG, CT]
 
     @property
     def comment(self) -> "CommentInterface[KTG, CT]":
@@ -108,20 +106,17 @@ class GenericBlock(Generic[KTG, CT], metaclass=ABCMeta):
 class AbsBlock(GenericBlock[KT, CT], Generic[KT, VT, LT, CT], metaclass=ABCMeta):
     """Abstract class for SLHA blocks."""
 
-    head: BlockHeadLine
-    _data: Union["OrderedDict[KT, LT]", "List[LT]"]
-
     @abstractmethod
     def __init__(self, obj: Union[BlockHeadLine, str]) -> None:
         super().__init__()
         if isinstance(obj, BlockHeadLine):
-            self.head = obj
+            self.head = obj  # type: BlockHeadLine
         elif isinstance(obj, str):
             self.head = BlockHeadLine(name=obj)
         else:
             raise TypeError(obj)
         self._comment = CommentInterface(self)
-        # self._data must be initialized in subclasses
+        self._data = NotImplemented  # must be initialized in subclasses
 
     @property
     def name(self) -> str:
@@ -171,11 +166,9 @@ class AbsBlock(GenericBlock[KT, CT], Generic[KT, VT, LT, CT], metaclass=ABCMeta)
 class Block(AbsBlock[KeyType, ValueType, ValueLine, str]):
     """SLHA block that has one value for one key."""
 
-    _data: "OrderedDict[KeyType, ValueLine]"
-
     def __init__(self, obj: Union[BlockHeadLine, str]) -> None:
         super().__init__(obj)
-        self._data = OrderedDict()
+        self._data = OrderedDict()  # type: OrderedDict[KeyType, ValueLine]
 
     def __getitem__(self, key: KeyType) -> ValueType:
         """Return the value corresponding to the key."""
@@ -249,12 +242,9 @@ class Block(AbsBlock[KeyType, ValueType, ValueLine, str]):
 class InfoBlock(AbsBlock[InfoKeyType, InfoValueType, InfoLine, List[str]]):
     """SLHA block that may have multiple values for one key."""
 
-    head: BlockHeadLine
-    _data: "List[InfoLine]"
-
     def __init__(self, obj: Union[BlockHeadLine, str]) -> None:
         super().__init__(obj)
-        self._data = []
+        self._data = []  # type: List[InfoLine]
 
     def __getitem__(self, key: InfoKeyType) -> Sequence[InfoValueType]:
         """Return the value corresponding to the key."""
@@ -349,20 +339,19 @@ class InfoBlock(AbsBlock[InfoKeyType, InfoValueType, InfoLine, List[str]]):
 class Decay(GenericBlock[DecayKeyType, str]):
     """Decay block."""
 
-    br_normalize_threshold: ClassVar[float] = 1.0e-6
-
-    head: DecayHeadLine
-    _data: "OrderedTupleOrderInsensitiveDict[DecayKeyType, DecayLine]"
+    br_normalize_threshold = 1.0e-6  # type: ClassVar[float]
 
     def __init__(self, obj: Union[DecayHeadLine, int]) -> None:
         super().__init__()
         if isinstance(obj, DecayHeadLine):
-            self.head = obj
+            self.head = obj  # type: DecayHeadLine
         elif isinstance(obj, int):
             self.head = DecayHeadLine(pid=obj, width=0)
         else:
             raise TypeError(obj)
-        self._data = OrderedTupleOrderInsensitiveDict()
+        self._data = (
+            OrderedTupleOrderInsensitiveDict()
+        )  # type: OrderedTupleOrderInsensitiveDict[DecayKeyType, DecayLine]
 
     @property
     def pid(self) -> int:

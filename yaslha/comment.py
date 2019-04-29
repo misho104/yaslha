@@ -21,12 +21,9 @@ logger = logging.getLogger(__name__)
 class CommentInterface(Generic[KTG, CT]):
     """Accessor object to the comments in blocks."""
 
-    _block: "GenericBlock[KTG, CT]"
-    _pre: "PreCommentInterface[KTG, CT]"
-
     def __init__(self, block: "GenericBlock[KTG, CT]") -> None:
-        self._block = block
-        self._pre = PreCommentInterface(block)
+        self._block = block  # type: GenericBlock[KTG, CT]
+        self._pre = PreCommentInterface(block)  # type: PreCommentInterface[KTG, CT]
 
     @property
     def pre(self) -> "PreCommentInterface[KTG, CT]":
@@ -55,10 +52,8 @@ class CommentInterface(Generic[KTG, CT]):
 class PreCommentInterface(Generic[KTG, CT]):
     """Accessor object to the pre-line comments in blocks."""
 
-    _block: "GenericBlock[KTG, CT]"
-
     def __init__(self, block: "GenericBlock[KTG, CT]"):
-        self._block = block
+        self._block = block  # type: GenericBlock[KTG, CT]
 
     def __getitem__(self, key: Union[KTG, HEAD]) -> List[str]:
         """Return pre-line comment."""

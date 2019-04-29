@@ -72,16 +72,13 @@ class CommentsPreserve(enum.Enum):
 class AbsDumper(metaclass=ABCMeta):
     """Abstract class for YASLHA dumpers."""
 
-    # configurations
-    _config: MutableMapping[str, Any]
-
     @abstractmethod
     def _read_config(self, sw: yaslha.config.SectionWrapper) -> None:
         self._config = {
             "blocks_order": sw.get_enum("blocks_order", BlocksOrder),
             "values_order": sw.get_enum("values_order", ValuesOrder),
             "comments_preserve": sw.get_enum("comments_preserve", CommentsPreserve),
-        }
+        }  # type: MutableMapping[str, Any]
 
     @abstractmethod
     def config(self, k: str) -> Any:
@@ -160,8 +157,6 @@ class AbsDumper(metaclass=ABCMeta):
 
 class SLHADumper(AbsDumper):
     """A dumper class for SLHA output."""
-
-    line_option: yaslha.line.LineOutputOption
 
     def _update_line_option(self) -> None:
         self.line_option.block_str = self.config("block_str")
@@ -262,7 +257,7 @@ class SLHADumper(AbsDumper):
 class AbsMarshalDumper(AbsDumper):
     """An abstract class for dumpers handling marshaled data."""
 
-    SCHEME_VERSION: ClassVar[int] = 3
+    SCHEME_VERSION = 3  # type: ClassVar[int]
 
     def _read_config(self, sw: yaslha.config.SectionWrapper) -> None:
         return super()._read_config(sw)

@@ -17,16 +17,16 @@ class TestOrderedCaseInsensitiveDict(unittest.TestCase):
     """Unit test of `OrderedCaseInsensitiveDict`."""
 
     def setUp(self):
-        self.d: oci_dict[Any, Any] = oci_dict()
+        self.d = oci_dict()  # type: oci_dict[Any, Any]
         self.d["FIRST"] = 100
         self.d[2] = None
         self.d[("Third", 0)] = (1, 2, 3)  # inner elements are not normalized
         self.d[1] = "AnB"
 
     def test_init_by_list(self):
-        d: oci_dict[Any, Any] = oci_dict(
+        d = oci_dict(
             [("a", 10), ("B", 30), (None, "AnB"), (1, "300aBC")]
-        )
+        )  # type: oci_dict[Any, Any]
         eq_(d["A"], 10)
         eq_(d["b"], 30)
         eq_(d["B"], 30)
@@ -35,9 +35,9 @@ class TestOrderedCaseInsensitiveDict(unittest.TestCase):
         eq_(list(d.keys()), ["A", "B", None, 1])
 
     def test_init_by_keywords(self):
-        d: oci_dict[Any, Any] = oci_dict(
+        d = oci_dict(
             FiRST=3, SeCoND=None, third=(1, 2, 3), lAST="AnB"
-        )
+        )  # type: oci_dict[Any, Any]
         eq_(d["FIRST"], 3)
         eq_(d["second"], None)
         eq_(d["third"], (1, 2, 3))
@@ -61,7 +61,7 @@ class TestOrderedCaseInsensitiveDict(unittest.TestCase):
         eq_(list(self.d.keys()), [2, ("Third", 0)])
 
     def test_dict(self):
-        d: MutableMapping[Any, Any] = dict(self.d)
+        d = dict(self.d)  # type: MutableMapping[Any, Any]
         eq_(len(d.keys()), 4)
         eq_(d["FIRST"], self.d["first"])
         eq_(d[2], self.d[2])
@@ -69,9 +69,9 @@ class TestOrderedCaseInsensitiveDict(unittest.TestCase):
         eq_(d[1], self.d[1])
 
     def test_eq_self(self):
-        other: oci_dict[Any, Any] = oci_dict(
+        other = oci_dict(
             [("fIRst", 100), (2, None), (("Third", 0), (1, 2, 3)), (1, "AnB")]
-        )
+        )  # type: oci_dict[Any, Any]
         ok_(self.d == other)
 
         del other["first"]
@@ -189,21 +189,21 @@ class TestOrderedTupleOrderInsensitiveDict(unittest.TestCase):
     """Unit test of `OrderedTupleOrderInsensitiveDict`."""
 
     def setUp(self):
-        self.d: toi_dict[Any, Any] = toi_dict()
+        self.d = toi_dict()  # type: toi_dict[Any, Any]
         self.d[1, 1, 1, 0] = 100
         self.d[300] = None
         self.d[(2, 1), (4, 2), (2, 3)] = (1, 2, 3)  # inner elements are not ordered
         self.d[4, 3, 2, 1] = "AnB"
 
     def test_init_by_list(self):
-        d: toi_dict[Any, Any] = toi_dict(
+        d = toi_dict(
             [
                 ((0, 1, 1, 1), 100),
                 (300, None),
                 (((2, 3), (2, 1), (4, 2)), (1, 2, 3)),
                 ((1, 3, 2, 4), "AnB"),
             ]
-        )
+        )  # type: toi_dict[Any, Any]
         ok_(self.d, d)
         eq_(d[1, 0, 1, 1], 100)
         eq_(d[0, 1, 1, 1], 100)
@@ -218,7 +218,7 @@ class TestOrderedTupleOrderInsensitiveDict(unittest.TestCase):
             d[(2, 4), (1, 2), (2, 3)]
 
     def test_init_by_keywords(self):
-        d: toi_dict[Any, Any] = toi_dict(first=3, second=None)
+        d = toi_dict(first=3, second=None)  # type: toi_dict[Any, Any]
         eq_(d["first"], 3)
         eq_(d["second"], None)
 
@@ -247,20 +247,20 @@ class TestOrderedTupleOrderInsensitiveDict(unittest.TestCase):
         eq_(list(self.d.keys()), [(1, 2, 3, 4)])
 
     def test_dict(self):
-        d: MutableMapping[Any, Any] = dict(self.d)
+        d = dict(self.d)  # type: MutableMapping[Any, Any]
         eq_(len(d.keys()), 4)
         for k in d.keys():
             eq_(d[k], self.d[k])
 
     def test_eq_self(self):
-        other: toi_dict[Any, Any] = toi_dict(
+        other = toi_dict(
             [
                 ((0, 1, 1, 1), 100),
                 (300, None),
                 (((2, 3), (2, 1), (4, 2)), (1, 2, 3)),
                 ((1, 2, 3, 4), "AnB"),
             ]
-        )
+        )  # type: toi_dict[Any, Any]
         ok_(self.d == other)
 
         del other[1, 1, 0, 1]

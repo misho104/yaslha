@@ -66,11 +66,12 @@ LT2 = TypeVar("LT2", bound="ValueLine")
 class LineOutputOption:
     """Class to hold all the options on dumping lines."""
 
-    block_str: str  # the string "BLOCK" for block head
-    decay_str: str  # the string "DECAY" for decay-block head
-    comment: bool  # whether to output line-end comments
-    pre_comment: bool  # whether to output pre-line comments
-    float_lower: bool  # letter E for float numbers
+    # type comment for python 3.6
+    # block_str: str  # the string "BLOCK" for block head
+    # decay_str: str  # the string "DECAY" for decay-block head
+    # comment: bool  # whether to output line-end comments
+    # pre_comment: bool  # whether to output pre-line comments
+    # float_lower: bool  # letter E for float numbers
 
     def __init__(self) -> None:
         self.block_str = "Block"
@@ -83,10 +84,10 @@ class LineOutputOption:
 class AbsLine(metaclass=ABCMeta):
     """Abstract class for SLHA-line like objects."""
 
-    output_option: ClassVar[LineOutputOption] = LineOutputOption()
+    output_option = LineOutputOption()  # type: ClassVar[LineOutputOption]
 
-    _pattern: ClassVar[str] = NotImplemented
-    _pattern_compiled: ClassVar[Optional[Pattern[str]]] = None
+    _pattern = NotImplemented  # type: ClassVar[str]
+    _pattern_compiled = None  # type: ClassVar[Optional[Pattern[str]]]
 
     @classmethod
     def pattern(cls) -> Pattern[str]:
@@ -106,7 +107,8 @@ class AbsLine(metaclass=ABCMeta):
 
     @abstractmethod
     def __init__(self, **kwargs: Any) -> None:
-        pass
+        self.comment = NotImplemented  # type: str
+        self.pre_comment = NotImplemented  # type: List[str]
 
     # from/to object/string representation
     def __str__(self) -> str:
@@ -142,9 +144,9 @@ class AbsLine(metaclass=ABCMeta):
     def _from_dump(cls: Type[LT], dump: Sequence[Any], **kw: Any) -> LT:
         pass
 
-    # comment handling
-    comment: str
-    pre_comment: List[str]
+    # comment handling (type declaration for python 3.6)
+    # comment: str
+    # pre_comment: List[str]
 
     def _format_comment(self, opt: LineOutputOption) -> str:
         """Return the comment formatted for SLHA line."""
@@ -178,9 +180,6 @@ class AbsLine(metaclass=ABCMeta):
 
 class BlockHeadLine(AbsLine):
     """Line for block header."""
-
-    _name: str
-    q: Optional[float]
 
     _pattern = (
         "Block"
@@ -240,9 +239,6 @@ class BlockHeadLine(AbsLine):
 class DecayHeadLine(AbsLine):
     """A line with format ``('DECAY',1x,I9,3x,1P,E16.8,0P,3x,'#',1x,A)``."""
 
-    pid: int
-    width: float
-
     _pattern = "Decay" + SEP + cap(INT, "pid") + SEP + cap(FLOAT, "width") + TAIL
 
     def __init__(self, pid: SInt, width: SFloat, comment: OS = None) -> None:
@@ -290,13 +286,11 @@ class InfoLine(AbsLine):
     """
 
     _pattern = r"\s*" + cap(INT, "key") + SEP + cap(INFO, "value") + TAIL
-    key: InfoKeyType
-    value: InfoValueType
 
     def __init__(self, key, value, comment=None):
         # type: (InfoKeyType, InfoValueType, OS)->None
-        self.key = int(key)
-        self.value = value.rstrip()
+        self.key = int(key)  # type: InfoKeyType
+        self.value = value.rstrip()  # type: InfoValueType
         self.comment = comment or ""
         self.pre_comment = []
 
@@ -328,13 +322,10 @@ class InfoLine(AbsLine):
 class ValueLine(AbsLine, metaclass=ABCMeta):
     """Abstract class for value lines in ordinary blocks."""
 
-    key: KeyType
-    value: ValueType
-
     @abstractmethod
     def __init__(self, key: KeyType, value: SValue, comment: OS = None) -> None:
-        self.key = key
-        self.value = to_number(value)
+        self.key = key  # type: KeyType
+        self.value = to_number(value)  # type: ValueType
         self.comment = comment or ""
         self.pre_comment = []
 
@@ -468,9 +459,6 @@ class ThreeIndexLine(ValueLine):
 class DecayLine(ValueLine):
     """A decay line ``(3x,1P,E16.8,0P,3x,I2,3x,N (I9,1x),2x,'#',1x,A)``."""
 
-    key: DecayKeyType
-    value: DecayValueType
-
     _pattern = (
         r"\s*"
         + cap(FLOAT, "br")
@@ -486,8 +474,9 @@ class DecayLine(ValueLine):
         if isinstance(channel, str):
             self.key = tuple(int(p) for p in re.split(r"\s+", channel.strip()))
         else:
-            self.key = channel
-        self.value = _float(br)
+            self.key = channel  # type: DecayKeyType
+        self.value = _float(br)  # type: DecayValueType
+
         self.comment = comment or ""
         self.pre_comment = []
 

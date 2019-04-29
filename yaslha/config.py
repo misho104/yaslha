@@ -19,12 +19,9 @@ EnumType = TypeVar("EnumType", bound=enum.Enum)
 class SectionWrapper:
     """A wrapper class of `configparser.SectionProxy`."""
 
-    _data: "configparser.SectionProxy"
-    override: MutableMapping[str, Any]
-
     def __init__(self, data: configparser.SectionProxy) -> None:
-        self._data = data
-        self.override = {}
+        self._data = data  # type: configparser.SectionProxy
+        self.override = {}  # type: MutableMapping[str, Any]
 
     def __getattr__(self, name: str) -> Any:
         return self._data.__getattribute__(name)

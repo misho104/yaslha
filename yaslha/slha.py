@@ -17,14 +17,10 @@ logger = logging.getLogger(__name__)
 class SLHA:
     """SLHA object, representing a SLHA-format text."""
 
-    blocks: "CIDict[str, Union[Block, InfoBlock]]"
-    decays: "OrderedDict[int, Decay]"
-    tail_comment: List[str]
-
     def __init__(self) -> None:
-        self.blocks = CIDict()
-        self.decays = OrderedDict()
-        self.tail_comment = []
+        self.blocks = CIDict()  # type: CIDict[str, Union[Block, InfoBlock]]
+        self.decays = OrderedDict()  # type: OrderedDict[int, Decay]
+        self.tail_comment = []  # type: List[str]
 
     def add_block(self, obj: Union["Block", "InfoBlock", "Decay"]) -> None:
         """Add a block to SLHA file.

@@ -19,10 +19,8 @@ logger = logging.getLogger(__name__)
 class SLHAParser:
     """SLHA-format file parser."""
 
-    processing: SLHAParserStatesType
-
     def __init__(self, **kw: Any) -> None:
-        pass
+        self.processing = None  # type: SLHAParserStatesType
 
     def _parse_line(self, line: str) -> Optional[yaslha.line.AbsLine]:
         if not line.strip():
