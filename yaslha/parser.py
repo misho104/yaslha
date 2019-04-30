@@ -43,7 +43,7 @@ class SLHAParser:
                 yaslha.line.DecayLine,  # for extensions
                 yaslha.line.CommentLine,
             ]
-        elif isinstance(self.processing, yaslha.Decay):
+        elif isinstance(self.processing, Decay):
             classes = [
                 yaslha.line.BlockHeadLine,
                 yaslha.line.DecayHeadLine,
