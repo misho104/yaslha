@@ -1,0 +1,14 @@
+span.py-ar {
+  font-weight: bold;
+  font-style: oblique;
+  color: #666;
+}
+
+.rst-content table.docutils td p,
+.rst-content table.field-list td p,
+.rst-content table.docutils th p .rst-content table.field-list th p {
+  font-size: inherit;
+}
+td.field-body p.first {
+  margin-top: 3px;
+}
