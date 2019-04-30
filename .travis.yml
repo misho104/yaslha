@@ -2,24 +2,31 @@ sudo: false
 cache: pip
 language: python
 
+branches:
+  only:
+    - master
+    - development
+
 before_install:
   - pip install poetry
 
 install:
-  - poetry install --develop=yaslha
+  - poetry --version
+  - poetry install -vvv --develop=yaslha
 
 stages:
   - test
   - typecheck
-  - linting
+#  - linting
 
 script:
-  - nosetests --config="" --cover-package=yaslha --with-coverage
+  - nosetests -s -d
+
+after_success:
   - coveralls
 
 jobs:
   include:
-    - python: "3.4"
     - python: "3.5"
     - python: "3.6"
     - python: "3.7"
@@ -28,9 +35,9 @@ jobs:
     - stage: typecheck
       python: "3.6"
       script:
-        - mypy --strict yaslha/*.py
+        - mypy -p yaslha
 
-    - stage: lint
-      python: "3.6"
-      script:
-        - flake8 --max-line-length=120
+#    - stage: linting
+#      python: "3.6"
+#      script:
+#        - flake8 yaslha

@@ -1,428 +1,374 @@
-from collections import OrderedDict
+"""Dumpers to write SLHA data in various format."""
+
 import enum
 import json
 import re
-from typing import cast, Optional, MutableMapping, Any, Tuple, Mapping, List, Union  # noqa: F401
+from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
+from typing import (
+    Any,
+    ClassVar,
+    List,
+    Mapping,
+    MutableMapping,
+    Sequence,
+    TypeVar,
+    Union,
+    cast,
+)
 
-import ruamel.yaml  # type: ignore
+import ruamel.yaml
 
 import yaslha
-import yaslha.exceptions as exceptions
+import yaslha.block
+import yaslha.config
 import yaslha.line
 import yaslha.utility
-from yaslha.line import CommentPosition
-from yaslha.utility import _float, _clean, _flatten, KeyType  # noqa: F401
+from yaslha._line import format_comment
+
+BlockLike = Union[yaslha.block.Block, yaslha.block.InfoBlock, yaslha.block.Decay]
+T = TypeVar("T")
 
 
+@enum.unique
 class BlocksOrder(enum.Enum):
+    """Options for block ordering."""
+
     DEFAULT = 0
     KEEP = 1
     ABC = 2
 
 
+@enum.unique
 class ValuesOrder(enum.Enum):
+    """Options for value ordering."""
+
     DEFAULT = 0
     KEEP = 1
     SORTED = 2
 
 
+@enum.unique
 class CommentsPreserve(enum.Enum):
+    """Options for comment handling."""
+
     NONE = 0
     TAIL = 1
     ALL = 2
 
+    @property
     def keep_line(self):
         # type: ()->bool
+        """Return if to keep line-level comments."""
         return self == CommentsPreserve.ALL
 
+    @property
     def keep_tail(self):
         # type: ()->bool
+        """Return if to keep tail comments of value lines."""
         return self != CommentsPreserve.NONE
 
 
-class AbsDumper:
-    def __init__(self, blocks_order=None, values_order=None, comments_preserve=None):
-        # type: (Optional[BlocksOrder], Optional[ValuesOrder], Optional[CommentsPreserve])->None
-        config = yaslha.cfg['yaslha.dumper.AbsDumper']
+class AbsDumper(metaclass=ABCMeta):
+    """Abstract class for YASLHA dumpers."""
 
-        self.blocks_order = config.value('blocks_order', blocks_order, typ=BlocksOrder)
-        self.values_order = config.value('values_order', values_order, typ=ValuesOrder)
-        self.comments_preserve = config.value('comments_preserve', comments_preserve, typ=CommentsPreserve)
+    @abstractmethod
+    def _read_config(self, sw: yaslha.config.SectionWrapper) -> None:
+        self._config = {
+            "blocks_order": sw.get_enum("blocks_order", BlocksOrder),
+            "values_order": sw.get_enum("values_order", ValuesOrder),
+            "comments_preserve": sw.get_enum("comments_preserve", CommentsPreserve),
+        }  # type: MutableMapping[str, Any]
 
-    def dump(self, block):
-        # type: (yaslha.SLHA)->str
-        raise NotImplementedError
+    @abstractmethod
+    def config(self, k: str) -> Any:
+        """Get a current value of configuration."""
+        return self._config[k]
+
+    @abstractmethod
+    def set_config(self, k: str, v: Any) -> None:
+        """Set configuration."""
+        if any(
+            [
+                k == "blocks_order" and not isinstance(v, BlocksOrder),
+                k == "values_order" and not isinstance(v, ValuesOrder),
+                k == "comments_preserve" and not isinstance(v, CommentsPreserve),
+            ]
+        ):
+            raise TypeError(k, v)
+        self._config[k] = v
+
+    @abstractmethod
+    def __init__(self, **kw: Any) -> None:
+        pass
+
+    @abstractmethod
+    def dump(self, slha: "yaslha.slha.SLHA") -> str:
+        """Return dumped string of an SLHA object."""
 
     def _blocks_sorted(self, slha):
-        # type: (yaslha.SLHA)->List[yaslha.Block]
-        if self.blocks_order == BlocksOrder.KEEP:
+        # type: (yaslha.slha.SLHA)->List[Union[yaslha.Block, yaslha.InfoBlock]]
+        slha.normalize(decays=False)
+        if self.config("blocks_order") == BlocksOrder.KEEP:
             return list(slha.blocks.values())
         block_names = list(slha.blocks.keys())
-        if self.blocks_order == BlocksOrder.ABC:
+        if self.config("blocks_order") == BlocksOrder.ABC:
             block_names.sort()
         else:
             block_names = yaslha.utility.sort_blocks_default(block_names)
         return [slha.blocks[name] for name in block_names]
 
     def _decays_sorted(self, slha):
-        # type: (yaslha.SLHA)->List['yaslha.Decay']
-        if self.values_order == ValuesOrder.KEEP:
+        # type: (yaslha.slha.SLHA)->List[yaslha.Decay]
+        slha.normalize(blocks=False)
+        if self.config("values_order") == ValuesOrder.KEEP:
             return list(slha.decays.values())
         pids = list(slha.decays.keys())
-        if self.values_order == ValuesOrder.SORTED:
+        if self.config("values_order") == ValuesOrder.SORTED:
             pids.sort()
         else:
             pids = yaslha.utility.sort_pids_default(pids)
         return [slha.decays[pid] for pid in pids]
 
-    def _block_lines_with_key_order(self, block):
-        # type: (yaslha.Block)->Tuple[List[yaslha.line.AbsLine], List[KeyType]]
-        value_lines = block.value_lines(with_comment_lines=self.comments_preserve.keep_line())
-
-        keys = list(value_lines.keys())
-        if self.values_order == ValuesOrder.DEFAULT and block.name == 'MASS':
-            keys_ = yaslha.utility.sort_pids_default(keys)  # to suppress strange mypy complaint
-            keys = keys_
-        elif self.values_order != ValuesOrder.KEEP:
-            keys.sort()
-        lines = _flatten([cast(yaslha.line.AbsLine, value_lines[key]) for key in keys])
-        return lines, keys
-
-    def _decay_lines_with_key_order(self, decay):
-        # type: (yaslha.Decay)->Tuple[List[yaslha.line.AbsLine], List[KeyType]]
-        if self.values_order == ValuesOrder.DEFAULT:
-            sorted_decay = yaslha.utility.copy_sorted_decay_block(decay, sort_by_br=True)
-        elif self.values_order == ValuesOrder.SORTED:
-            sorted_decay = yaslha.utility.copy_sorted_decay_block(decay, sort_by_br=False)
+    def _block_lines_ordered(self, block):
+        # type: (BlockLike)->Sequence[yaslha.line.AbsLine]
+        sort = self.config("values_order") != ValuesOrder.KEEP
+        if (
+            isinstance(block, yaslha.block.Block)
+            and self.config("values_order") == ValuesOrder.DEFAULT
+            and block.name == "MASS"
+        ):
+            keys = yaslha.utility.sort_pids_default(list(block.keys()))
+            return [block._data[k] for k in keys]
         else:
-            sorted_decay = decay
-        lines = _flatten(list(sorted_decay.value_lines(with_comment_lines=self.comments_preserve.keep_line()).values()))
-        lines = cast(List[yaslha.line.AbsLine], lines)
-        return lines, list(sorted_decay.keys())
+            return [line for _, line in block._lines(sort=sort)]
+
+    @staticmethod
+    def _document_out(lines: Sequence[str]) -> List[str]:
+        return [
+            "#"
+            if not lines
+            else line.replace(" ", "#", 1)
+            if line.startswith(" ")
+            else "#" + line.replace("  ", " ", 1)
+            for line in lines
+        ]
 
 
 class SLHADumper(AbsDumper):
-    TAIL_COMMENTS_RE = re.compile(r'\#.*')
+    """A dumper class for SLHA output."""
 
-    @staticmethod
-    def comment_out(line):
-        # type: (str)->str
-        if not line:
-            return '#'
-        elif line.startswith(' '):
-            return line.replace(' ', '#', 1)
-        else:
-            return '#' + line.replace('  ', ' ', 1)
+    def _update_line_option(self) -> None:
+        self.line_option.block_str = self.config("block_str")
+        self.line_option.decay_str = self.config("decay_str")
+        self.line_option.comment = self.config("comments_preserve").keep_tail
+        self.line_option.pre_comment = self.config("comments_preserve").keep_line
 
-    def __init__(self, separate_blocks=None, forbid_last_linebreak=None, document_blocks=None, **kwargs):
-        # type: (Optional[bool], Optional[bool], Optional[List[Union[int, str]]], Any)->None
-        super().__init__(**kwargs)
+    def _read_config(self, sw: yaslha.config.SectionWrapper) -> None:
+        super()._read_config(sw)
+        self._config["separate_blocks"] = sw.getboolean("separate_blocks")
+        self._config["forbid_last_linebreak"] = sw.getboolean("forbid_last_linebreak")
+        self._config["document_blocks"] = sw.get_list("document_blocks")
+        self._config["block_str"] = sw["block_str"]
+        self._config["decay_str"] = sw["decay_str"]
+        self._config["float_lower"] = sw.getboolean("float_lower")
+        self._config["write_version"] = sw.getboolean("write_version")
+        self._update_line_option()
 
-        config = yaslha.cfg['yaslha.dumper.SLHADumper']
+    def config(self, k: str) -> Any:
+        """Get a current value of configuration."""
+        return super().config(k)
 
-        self.separate_blocks = config.value('separate_blocks', separate_blocks, typ=bool)
-        self.forbid_last_linebreak = config.value('forbid_last_linebreak', forbid_last_linebreak, typ=bool)
-        self.document_blocks = [name.upper() if isinstance(name, str) else name for name
-                                in config.value('document_blocks', document_blocks)]  # type: List[Union[int, str]]
+    def set_config(self, k: str, v: Any) -> None:
+        """Set configuration."""
+        # check before set
+        pass
+        # set
+        super().set_config(k, v)
+        # operations after set
+        if k in ["block_str", "decay_str", "comments_preserve"]:
+            self._update_line_option()
 
-        # hidden options
-        self.block_str = config.value('block_str')
-        self.decay_str = config.value('decay_str')
-        self.float_lower = config.value('float_lower', typ=bool)
-        self.write_version = config.value('write_version', typ=bool)
+    def __init__(self, **kw: Any) -> None:
+        self.line_option = yaslha.line.LineOutputOption()
+        self._read_config(yaslha.cfg["SLHADumper"])
+        for k, v in kw.items():
+            self.set_config(k, v)
 
-    def _e_float(self, v):
-        # type: (Any)->str
-        return ('{:16.8e}' if self.float_lower else '{:16.8E}').format(_float(v))
+    def _version_comment(self) -> str:
+        return "# written by {} {}".format(yaslha.__pkgname__, yaslha.__version__)
 
-    def dump(self, slha):
-        # type: (yaslha.SLHA)->str
-        blocks = [self.dump_block(block, document_block=(block.name in self.document_blocks))
-                  for block in self._blocks_sorted(slha)]
-        decays = [self.dump_decay(decay, document_block=(decay.pid in self.document_blocks))
-                  for decay in self._decays_sorted(slha)]
-        if self.comments_preserve.keep_line():
-            tail_comment = [v.line for v in slha.tail_comment]
-        else:
-            tail_comment = []
+    def _version_comment_regexp(self) -> str:
+        return r"^\s*#\s*written\s+by\s+{}\s+".format(yaslha.__pkgname__)
 
-        # configuration-depending operations
-        blocks = blocks + decays
-        if self.separate_blocks:
-            for i in range(len(blocks)):
-                if i > 0 and blocks[i][0] != '#':
-                    blocks[i].insert(0, '#')
-            if not tail_comment or tail_comment[-1] != '#':
-                tail_comment.append('#')
+    def dump(self, slha: "yaslha.slha.SLHA") -> str:
+        """Return SLHA-format text of an SLHA object."""
+        document_blocks = [
+            v.upper() for v in self.config("document_blocks")  # normalize to upper
+        ]  # type: Sequence[str]
 
-        lines = _flatten(blocks)
+        lines = []  # type: List[str]
+        for block in self._blocks_sorted(slha):
+            lines.extend(
+                self.dump_block(block, document_block=(block.name in document_blocks))
+            )
+            if self.config("separate_blocks"):
+                lines.append("#")
+        for decay in self._decays_sorted(slha):
+            lines.extend(
+                self.dump_block(decay, document_block=(decay.pid in document_blocks))
+            )
+            if self.config("separate_blocks"):
+                lines.append("#")
+        if self.config("separate_blocks"):
+            lines.pop()
+        if self.config("comments_preserve").keep_line:
+            for c in slha.tail_comment:
+                lines.append(format_comment(c, add_sharp=True, strip=False))
 
-        version_string_old = '# written by {}'.format(yaslha.__pkgname__)
-        for i in range(len(lines)):
-            if lines[i].startswith(version_string_old):
-                lines[i] = ''
-        if self.write_version:
-            lines.insert(0, '# written by {} {}'.format(yaslha.__pkgname__, yaslha.__version__))
+        # replace version string
+        if self.config("write_version"):
+            re_version = re.compile(self._version_comment_regexp())
+            lines = [v for v in lines if not re_version.match(v)]
+            lines.insert(0, self._version_comment())
 
-        result = '\n'.join(_clean(lines)) + '\n'
+        result = "\n".join(lines) + "\n"
 
-        if self.forbid_last_linebreak:
+        if self.config("forbid_last_linebreak"):
             result = result.rstrip()
 
         return result
 
     def dump_block(self, block, document_block=False):
-        # type: (yaslha.Block, bool)->List[str]
-        head = [block.head_line()]  # type: List[yaslha.line.AbsLine]
-        body, key_order = self._block_lines_with_key_order(block)
-        tail = []                   # type: List[yaslha.line.AbsLine]
-        if self.comments_preserve.keep_line():
-            pre_comment = cast(List[yaslha.line.AbsLine], block.line_comment(CommentPosition.Prefix))
-            head_comment = cast(List[yaslha.line.AbsLine], block.line_comment(CommentPosition.Heading))
-            head = pre_comment + head + head_comment
-            tail = cast(List[yaslha.line.AbsLine], block.line_comment(CommentPosition.Suffix))
+        # type: (BlockLike, bool)->List[str]
+        """Return SLHA-format text of a block."""
+        lines = block.head.to_slha(self.line_option)
+        for line in self._block_lines_ordered(block):
+            lines.extend(line.to_slha(self.line_option))
 
-        lines_raw = _clean(_flatten([self.dump_line(obj, block_name=block.name) for obj in head + body + tail]))
-        lines = cast(List[str], lines_raw)
-        if document_block:
-            lines = [self.comment_out(line) for line in lines]
-        return lines
+        # special spacing for MASS block
+        if isinstance(block, yaslha.block.Block) and block.name == "MASS":
+            re_mass = re.compile(r"^\s*(\d+)")
+            lines = [
+                re_mass.sub(lambda x: " {:>9}".format(x.group(1)), i) for i in lines
+            ]
 
-    def dump_line(self, obj, block_name=None):
-        # type: (yaslha.line.AbsLine, Optional[str])->Union[str, List[str]]
-        # TODO: rewrite using singledispatcher
-        if isinstance(obj, yaslha.line.CommentLine):
-            if self.comments_preserve.keep_line():
-                return self.dump_comment_line(obj)
-            else:
-                return ''
-        if isinstance(obj, yaslha.line.BlockLine):
-            line = self.dump_block_line(obj)  # type: Union[str, List[str]]
-        elif isinstance(obj, yaslha.line.DecayBlockLine):
-            line = self.dump_decayblock_line(obj)
-        elif isinstance(obj, yaslha.line.DecayLine):
-            line = self.dump_decay_line(obj)
-        elif isinstance(obj, yaslha.line.InfoLine):
-            line = self.dump_info_line(obj, block_name)
-        elif isinstance(obj, yaslha.line.ValueLine):
-            line = self.dump_value_line(obj, block_name)
-        else:
-            exceptions.UnrecognizedLineObjectWarning(obj).call()
-            return ''
-
-        if self.comments_preserve.keep_tail():
-            return line
-        else:
-            if isinstance(line, str):
-                return self.TAIL_COMMENTS_RE.sub('#', line)
-            else:
-                return [self.TAIL_COMMENTS_RE.sub('#', i) for i in line]
-
-    def dump_comment_line(self, obj):
-        # type: (yaslha.line.CommentLine)->str
-        return obj.line
-
-    def dump_block_line(self, obj):
-        # type: (yaslha.line.BlockLine)->str
-        q_str = '' if obj.q is None else 'Q={}'.format(self._e_float(obj.q))
-        body = '{} {} {}'.format(self.block_str, obj.name.upper(), q_str)
-        return '{:23}   # {}'.format(body, obj.comment.lstrip()).rstrip()
-
-    def dump_info_line(self, obj, block_name):
-        # type: (yaslha.line.InfoLine, Optional[str])->List[str]
-        lines = list()
-        for i, v in enumerate(obj.value):
-            c = obj.comment[i] if len(obj.comment) > i else ''
-            lines.append(' {:>5}   {:16}   # {}'.format(obj.key, v, c).rstrip())
-        return lines
-
-    def dump_value_line(self, obj, block_name):
-        # type: (yaslha.line.ValueLine, Optional[str])->str
-        if block_name == 'MASS' and isinstance(obj.key, int):
-            return ' {:>9}   {}   # {}'.format(obj.key, self._e_float(obj.value), obj.comment.lstrip()).rstrip()
-
-        if isinstance(obj.key, tuple):
-            key_str = ' '.join(['{:>2}'.format(i) for i in obj.key])
-        else:
-            key_str = '{:>5}'.format('' if obj.key is None else obj.key)
-
-        if isinstance(obj.value, int):
-            value_str = '{:>10}      '.format(obj.value)
-        elif isinstance(obj.value, float):
-            value_str = self._e_float(obj.value)
-        else:
-            value_str = '{:<16}'.format(obj.value)
-        return ' {}   {}   # {}'.format(key_str, value_str, obj.comment.lstrip()).rstrip()
-
-    def dump_decay(self, decay, document_block=False):
-        # type: (yaslha.Decay, bool)->List[str]
-        head = [decay.head_line()]  # type: List[yaslha.line.AbsLine]
-        body, key_order = self._decay_lines_with_key_order(decay)
-        tail = []                   # type: List[yaslha.line.AbsLine]
-        if self.comments_preserve.keep_line():
-            pre_comment = cast(List[yaslha.line.AbsLine], decay.line_comment(CommentPosition.Prefix))
-            head_comment = cast(List[yaslha.line.AbsLine], decay.line_comment(CommentPosition.Heading))
-            head = pre_comment + head + head_comment
-            tail = cast(List[yaslha.line.AbsLine], decay.line_comment(CommentPosition.Suffix))
-
-        lines = cast(List[str], _clean([self.dump_line(obj) for obj in head + body + tail]))
-
-        if document_block:
-            lines = [self.comment_out(line) for line in lines]
-        return lines
-
-    def dump_decayblock_line(self, obj):
-        # type: (yaslha.line.DecayBlockLine)->str
-        return '{} {:>9}   {}   # {}'.format(
-            self.decay_str, obj.pid, self._e_float(obj.width), obj.comment.lstrip()).rstrip()
-
-    def dump_decay_line(self, obj):
-        # type: (yaslha.line.DecayLine)->str
-        ids_str = ''.join(['{:>9} '.format(i) for i in obj.key])
-        return '   {}   {:>2}   {}  # {}'.format(
-            self._e_float(obj.value), len(obj.key), ids_str, obj.comment.lstrip()).rstrip()
+        return self._document_out(lines) if document_block else lines
 
 
 class AbsMarshalDumper(AbsDumper):
-    SCHEME_VERSION = 2
+    """An abstract class for dumpers handling marshaled data."""
 
-    def __init__(self, **kwargs):
-        # type: (Any)->None
-        super().__init__(**kwargs)
+    SCHEME_VERSION = 3  # type: ClassVar[int]
+
+    def _read_config(self, sw: yaslha.config.SectionWrapper) -> None:
+        return super()._read_config(sw)
+
+    def config(self, k: str) -> Any:
+        """Get a current value of configuration."""
+        return super().config(k)
+
+    def set_config(self, k: str, v: Any) -> None:
+        """Set configuration."""
+        super().set_config(k, v)
+
+    def _format_specification(self) -> Any:
+        return OrderedDict(
+            type="SLHA",
+            formatter="{} {}".format(yaslha.__pkgname__, yaslha.__version__),
+            scheme=self.SCHEME_VERSION,
+        )
 
     def marshal(self, slha):
-        # type: (yaslha.SLHA)->Mapping[str, Any]
-        result = _clean(OrderedDict([
-            ('FORMAT', OrderedDict([
-                ('TYPE', 'SLHA'),
-                ('FORMATTER', '{} {}'.format(yaslha.__pkgname__, yaslha.__version__)),
-                ('SCHEME', self.SCHEME_VERSION),
-            ])),
-            ('BLOCK', OrderedDict([(b.name, self.marshal_block(b)) for b in self._blocks_sorted(slha)])),
-            ('DECAY', OrderedDict([(d.pid, self.marshal_decay(d)) for d in self._decays_sorted(slha)])),
-            ('tail_comment', [v.line for v in slha.tail_comment] if self.comments_preserve.keep_line() else []),
-        ]))
-        return cast(Mapping[str, Any], result)
+        # type: (yaslha.slha.SLHA)->Mapping[str, Any]
+        """Return Mashaled object of an SLHA object."""
+        blocks = OrderedDict()  # type: MutableMapping[str, Any]
+        for block in self._blocks_sorted(slha):
+            blocks[block.name] = self.marshal_block(block)
+        decays = OrderedDict()  # type: MutableMapping[int, Any]
+        for decay in self._decays_sorted(slha):
+            decays[decay.pid] = self.marshal_block(decay)
+        tail_comments = [format_comment(c, strip=False) for c in slha.tail_comment]
 
-    def marshal_block(self, block: 'yaslha.Block')->Mapping[Any, Any]:
-        data = OrderedDict([('info', None),
-                            ('values', None),
-                            ('comments', list())])  # type: MutableMapping[str, Any]
-        values, key_order = self._block_lines_with_key_order(block)
-        values_without_comment_lines = _flatten([v for v in values if not isinstance(v, yaslha.line.CommentLine)])
-        if block.q:
-            data['info'] = ['Q=', block.q]
-        if self.comments_preserve.keep_line():
-            # comments before heading or after body
-            for c_pos in CommentPosition:
-                if block.line_comment(c_pos):
-                    data['comments'].append([c_pos.name, [v.line for v in block.line_comment(c_pos)]])
-            # comments between values
-            present_keys = block.line_comment_keys()
-            for c_key in key_order:
-                if c_key in present_keys:
-                    c = ['before']  # type: List[Any]
-                    if c_key is not None:
-                        c = _flatten(c + [c_key])
-                    data['comments'].append(c + block.line_comment(c_key))
+        result = OrderedDict()  # type: MutableMapping[str, Any]
+        result["format"] = self._format_specification()
+        if blocks:
+            result["block"] = blocks
+        if decays:
+            result["decay"] = decays
+        if self.config("comments_preserve").keep_line and tail_comments:
+            result["tail_comments"] = tail_comments
+        return result
 
-        if self.comments_preserve.keep_tail():
-            if block.head_comment:
-                data['comments'].append(['head', block.head_comment])
-            for line in values_without_comment_lines:
-                if line.comment:
-                    c = _flatten([] if line.key is None else [line.key])
-                    c.append(line.comment)
-                    data['comments'].append(c)
+    def marshal_block(self, block: "BlockLike") -> Mapping[str, Any]:
+        """Return marshaled object of a block."""
+        info = block.head.dump()
+        value = []
+        comment = []
+        comment.extend(block.head._dump_comment())
+        for line in self._block_lines_ordered(block):
+            value.append(line.dump())
+            comment.extend(line._dump_comment())
 
-        if not data['comments']:
-            del data['comments']
+        comment = [
+            c
+            for c in comment
+            if (c[0] == "pre" and self.config("comments_preserve").keep_line)
+            or (c[0] != "pre" and self.config("comments_preserve").keep_tail)
+        ]
 
-        data['values'] = list([self.marshal_line(line) for line in values_without_comment_lines])
-        return cast(Mapping[Any, Any], _clean(data))
-
-    def marshal_decay(self, decay):
-        # type: (yaslha.Decay)->Mapping[Any, Any]
-        data = OrderedDict([('info', [decay.width]),
-                            ('values', None),
-                            ('comments', list())])  # type: MutableMapping[str, Any]
-        values, key_order = self._decay_lines_with_key_order(decay)
-        values_without_comment_lines = _flatten([v for v in values if not isinstance(v, yaslha.line.CommentLine)])
-
-        if self.comments_preserve.keep_line():
-            # comments before heading or after body
-            for c_pos in yaslha.line.CommentPosition:
-                if decay.line_comment(c_pos):
-                    data['comments'].append([c_pos.name, [v.line for v in decay.line_comment(c_pos)]])
-            # comments between values
-            present_keys = decay.line_comment_keys()
-            for c_key in key_order:
-                if c_key in present_keys:
-                    c = ['before']  # type: List[Any]
-                    if c_key is not None:
-                        c = _flatten(c + [c_key])
-                    data['comments'].append(c + decay.line_comment(c_key))
-
-        if self.comments_preserve.keep_tail():
-            if decay.head_comment:
-                data['comments'].append(['head', decay.head_comment])
-            for line in values_without_comment_lines:
-                if line.comment:
-                    c = _flatten([] if line.key is None else [line.key])
-                    c.append(line.comment)
-                    data['comments'].append(c)
-
-        if not data['comments']:
-            del data['comments']
-
-        data['values'] = list([self.marshal_line(line) for line in values_without_comment_lines])
-        return cast(Mapping[Any, Any], _clean(data))
-
-    def marshal_line(self, line):
-        # type: (yaslha.line.AbsLine)->Any
-        if isinstance(line, yaslha.line.DecayLine):
-            return _flatten([line.value, len(line.key), line.key])
-        elif isinstance(line, yaslha.line.CommentLine):
-            raise ValueError
-        elif line.key is None:
-            return [line.value]
-        elif isinstance(line, yaslha.line.InfoLine):
-            # InfoLine must have a key as (single) integer and a value as List[str].
-            return [line.key, line.value]
-        else:
-            # other lines may have a key with multiple integers but the value is not a list.
-            return _flatten([line.key, line.value])
+        result = OrderedDict()  # type: MutableMapping[str, Any]
+        if info:
+            result["info"] = info
+        if value:
+            result["values"] = value
+        if comment:
+            result["comments"] = comment
+        return result
 
 
 class YAMLDumper(AbsMarshalDumper):
-    def __init__(self, **kwargs):
-        # type: (Any)->None
-        super().__init__(**kwargs)
+    """A dumper for YAML output."""
+
+    def __init__(self, **kw: Any) -> None:
+        self._read_config(yaslha.cfg["YAMLDumper"])
+        for k, v in kw.items():
+            self.set_config(k, v)
+
         self.yaml = ruamel.yaml.YAML()
         self.yaml.default_flow_style = None
 
-        # we need not it is marked as omap (OrderedDict); it could be just a dict as an output.
+        # we need not it is marked as omap (OrderedDict);
+        # it could be just a dict as an output.
         # (but we may change the mind....)
-        self.yaml.representer.yaml_representers[OrderedDict] = self.yaml.representer.yaml_representers[dict]
+        self.yaml.representer.yaml_representers[
+            OrderedDict
+        ] = self.yaml.representer.yaml_representers[dict]
         # # another idea...
         # def represent_list(self, data):
-        #     flow_style = all(isinstance(i, str) or not hasattr(i, '__iter__') for i in data)
-        #     return self.represent_sequence(u'tag:yaml.org,2002:seq', data, flow_style=flow_style)
+        #     flow_style = all(isinstance(i, str) or not hasattr(i, '__iter__')
+        #                      for i in data)
+        #     return self.represent_sequence(u'tag:yaml.org,2002:seq', data,
+        #                                    flow_style=flow_style)
         # self.yaml.representer.yaml_representers[list] = represent_list
 
-    def dump(self, data):
-        # type: (yaslha.SLHA)->str
+    def dump(self, slha: "yaslha.slha.SLHA") -> str:
+        """Return YAML-format text of an SLHA object."""
         stream = ruamel.yaml.compat.StringIO()
-        self.yaml.dump(self.marshal(data), stream)
+        self.yaml.dump(self.marshal(slha), stream)
         return cast(str, stream.getvalue())
 
 
 class JSONDumper(AbsMarshalDumper):
-    def __init__(self, **kwargs):
-        # type: (Any)->None
-        super().__init__(**kwargs)
+    """A dumper for JSON output."""
+
+    def __init__(self, **kw: Any) -> None:
+        self._read_config(yaslha.cfg["JSONDumper"])
+        for k, v in kw.items():
+            self.set_config(k, v)
+
         self.indent = 2
 
-    def dump(self, slha):
-        # type: (yaslha.SLHA)->str
+    def dump(self, slha: "yaslha.slha.SLHA") -> str:
+        """Return JSON-format text of an SLHA object."""
         return json.dumps(self.marshal(slha), indent=self.indent)

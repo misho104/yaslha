@@ -1,105 +1,119 @@
-from typing import Union, List, Tuple, cast, Any  # noqa: F401
+"""Parsers for SLHA package.
 
-import yaslha
-import yaslha.exceptions as exceptions
+Parsers for SLHA-format, JSON-format, and YAML-format are provided.
+"""
+
+import logging
+from typing import Any, List, Optional, Type, Union
+
 import yaslha.line
-from yaslha.line import CommentPosition
+import yaslha.slha
+from yaslha.block import AbsBlock, Block, Decay, InfoBlock
+
+SLHAParserStatesType = Union[None, Block, InfoBlock, Decay]
 
 
-SLHAParserStatesType = Union[None, 'yaslha.Block', 'yaslha.Decay']
+logger = logging.getLogger(__name__)
 
 
 class SLHAParser:
-    def __init__(self, **kwargs):
-        # type: (Any)->None
-        pass
+    """SLHA-format file parser."""
 
-    def in_info_block(self, block_obj):
-        # type: (yaslha.Block)->bool
-        """Method to decide if a block is an "info block" or not.
+    def __init__(self, **kw: Any) -> None:
+        self.processing = None  # type: SLHAParserStatesType
 
-        Info blocks accepts only "InfoLine"s (1x,I5,3x,A), which have
-        one (and only one) index followed by any string. InfoLines are
-        not accepted by any other blocks.
-        """
-        return isinstance(block_obj, yaslha.Block) and block_obj.name.endswith('INFO')
+    def _parse_line(self, line: str) -> Optional[yaslha.line.AbsLine]:
+        if not line.strip():
+            return None  # empty line will be ignored
+        if isinstance(self.processing, InfoBlock):
+            classes = [
+                yaslha.line.BlockHeadLine,
+                yaslha.line.DecayHeadLine,
+                yaslha.line.InfoLine,
+                yaslha.line.CommentLine,
+            ]  # type: List[Type[yaslha.line.AbsLine]]
+        elif isinstance(self.processing, Block):
+            classes = [
+                yaslha.line.BlockHeadLine,
+                yaslha.line.DecayHeadLine,
+                yaslha.line.NoIndexLine,
+                yaslha.line.OneIndexLine,
+                yaslha.line.TwoIndexLine,
+                yaslha.line.ThreeIndexLine,
+                yaslha.line.DecayLine,  # for extensions
+                yaslha.line.CommentLine,
+            ]
+        elif isinstance(self.processing, yaslha.Decay):
+            classes = [
+                yaslha.line.BlockHeadLine,
+                yaslha.line.DecayHeadLine,
+                yaslha.line.DecayLine,
+                yaslha.line.CommentLine,
+            ]
+        elif self.processing is None:
+            classes = [
+                yaslha.line.BlockHeadLine,
+                yaslha.line.DecayHeadLine,
+                yaslha.line.CommentLine,
+            ]
+        else:
+            logger.critical("Unexpected state: %s", self.processing)
+            raise RuntimeError
 
-    def parse(self, text):
-        # type: (str)->yaslha.SLHA
-        """Parse SLHA format text."""
+        for c in classes:
+            obj = c.construct(line)
+            if obj:
+                return obj
+        raise ValueError(line)
 
-        processing = None        # type: SLHAParserStatesType
-        comment = list()         # type: List[yaslha.line.CommentLine]
-        slha = yaslha.SLHA()
+    def parse(self, text: str) -> yaslha.slha.SLHA:
+        """Parse SLHA format text and return SLHA object."""
+        self.processing = None
+        slha = yaslha.slha.SLHA()
+        comment_lines = []  # type: List[str]
 
         for line in text.splitlines():
-            # parse line; special treatment for INFO blocks.
-            if isinstance(processing, yaslha.Block) and self.in_info_block(processing):
-                obj = yaslha.line.parse_string_in_info_block(line)
-            else:
-                obj = yaslha.line.parse_string(line)
-
-            if isinstance(obj, yaslha.line.BlockLine):
-                # Start a new block
-                processing = yaslha.Block(obj.name, q=obj.q, head_comment=obj.comment)
-                slha.blocks[obj.name] = processing
-                if comment:
-                    processing.set_line_comment(CommentPosition.Prefix, comment)
-                    comment = list()
-
-            elif isinstance(obj, yaslha.line.DecayBlockLine):
-                # Start a new decay block
-                processing = yaslha.Decay(obj.pid, width=obj.width)
-                slha.decays[obj.pid] = processing
-                if comment:
-                    processing.set_line_comment(CommentPosition.Prefix, comment)
-                    comment = list()
-
-            elif isinstance(obj, yaslha.line.CommentLine):
-                # A comment line, which will be appended to the next object
-                comment.append(obj)
-
-            elif obj:
-                # data line
-                if isinstance(processing, yaslha.Block) and self.in_info_block(processing):
-                    # fill INFO block
-                    if isinstance(obj, yaslha.line.InfoLine):
-                        if obj.key in processing:
-                            line_obj = processing.get_line_obj(obj.key)
-                            assert(isinstance(line_obj, yaslha.line.InfoLine))
-                            line_obj.append(obj.value, obj.comment)
-                        else:
-                            processing[obj.key] = obj
-                    else:
-                        exceptions.InvalidFormatWarning(line, 'InfoBlock ' + processing.name).call()
-
-                elif isinstance(processing, yaslha.Block):
-                    # fill usual block
-                    processing[obj.key] = obj
-
-                elif isinstance(processing, yaslha.Decay):
-                    # fill decay block
-                    if isinstance(obj, yaslha.line.DecayLine):
-                        processing[cast(Tuple[int], obj.key)] = obj
-                    else:
-                        exceptions.InvalidFormatWarning(line, 'Decay {}'.format(processing.pid)).call()
-
-                else:
-                    exceptions.OrphanLineWarning(line).call()
+            try:
+                obj = self._parse_line(line)
+                if obj is None:
                     continue
+            except ValueError:
+                logger.warning("Unrecognized line: %s", line)
+                continue
 
-                if comment:
-                    keys_len = len(processing.keys())
-                    if keys_len == 0:
-                        pass  # because obj not added
-                    elif keys_len == 1:
-                        processing.set_line_comment(CommentPosition.Heading, comment)
-                        comment = list()
-                    else:
-                        processing.set_line_comment(obj.key, comment)
-                        comment = list()
+            # comment handling
+            if isinstance(obj, yaslha.line.CommentLine):
+                comment_lines.append(obj.comment)
+                continue
+            elif isinstance(obj, yaslha.line.AbsLine):
+                obj.pre_comment = comment_lines
+                comment_lines = []
             else:
-                exceptions.UnrecognizedLineWarning(line).call()
-        if comment:
-            slha.tail_comment = comment
+                raise NotImplementedError(obj)
+
+            # line handling
+            if isinstance(obj, yaslha.line.BlockHeadLine):
+                self.processing = AbsBlock.new(obj)
+                assert self.processing is not None
+                slha.add_block(self.processing)
+            elif isinstance(obj, yaslha.line.DecayHeadLine):
+                self.processing = Decay(obj)
+                assert self.processing is not None
+                slha.add_block(self.processing)
+            elif isinstance(obj, yaslha.line.InfoLine):
+                if not isinstance(self.processing, InfoBlock):
+                    logger.critical("InfoLine found outside of INFO block: %s", line)
+                    raise ValueError(self.processing)
+                self.processing.append_line(obj)
+            elif isinstance(obj, yaslha.line.ValueLine):
+                if self.processing is None:
+                    logger.critical("ValueLine found outside of block: %s", line)
+                    raise ValueError(self.processing)
+                self.processing.update_line(obj)
+            else:
+                raise TypeError(obj)
+
+        # tail comments
+        slha.tail_comment = comment_lines
+        self.processing = None
         return slha

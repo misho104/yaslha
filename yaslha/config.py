@@ -1,50 +1,72 @@
+"""Configuration handlers."""
+
+import collections.abc
+import configparser
 import enum
 import os
 import pathlib
-import configparser
-from typing import Mapping, Union, Dict, Any, TypeVar, Tuple, Optional  # noqa: F401
-
+from typing import Any, List, MutableMapping, Type, TypeVar
 
 CONFIG_FILES = [
-    str(pathlib.Path(__file__).with_name('yaslha.cfg.default')),
-    os.path.expanduser('~/.yaslha.cfg'),
-    'yaslha.cfg']  # latter overrides former
+    str(pathlib.Path(__file__).with_name("yaslha.cfg.default")),
+    os.path.expanduser("~/.yaslha.cfg"),
+    "yaslha.cfg",
+]  # latter overrides former
+
+EnumType = TypeVar("EnumType", bound=enum.Enum)
 
 
-class ConfigDict(Dict[str, Any]):
-    def value(self, key, override=None, typ=None):
-        # type: (str, Any, Any)->Any
-        configuration = self[key]
+class SectionWrapper:
+    """A wrapper class of `configparser.SectionProxy`."""
 
-        if typ and issubclass(typ, enum.Enum):
-            c = None
-            for i in typ:
-                if configuration.lower() == i.name.lower():
-                    c = i
-            configuration = c or list(typ)[0]
-        elif typ == bool:
-            configuration = False if configuration.lower() in ['false', 'None', '0'] else bool(configuration)
+    def __init__(self, data: configparser.SectionProxy) -> None:
+        self._data = data  # type: configparser.SectionProxy
+        self.override = {}  # type: MutableMapping[str, Any]
 
-        return configuration if override is None else override
+    def __getattr__(self, name: str) -> Any:
+        return self._data.__getattribute__(name)
+
+    def __getitem__(self, key: str) -> Any:
+        if key in self.override:
+            return self.override[key]
+        if key in self._data:
+            return self._data[key]
+        raise KeyError(key)
+
+    def get_enum(self, key: str, enum_class: Type[EnumType]) -> EnumType:
+        """Get an item as an Enum-class object."""
+        if key in self.override:
+            return self.override[key]  # type: ignore
+        if key in self._data:
+            value = self._data[key].lower()
+            for i in enum_class:
+                if i.name.lower() == value:
+                    return i
+        raise KeyError(key)
+
+    def get_list(self, key: str) -> List[str]:
+        """Get a List[str] object."""
+        key_for_a_list = "{}@list".format(key)
+        if key in self.override:
+            value = self.override[key]
+        elif key_for_a_list in self._data:
+            value = self._data[key_for_a_list]
+        else:
+            raise KeyError(key)
+        if isinstance(value, str):
+            return [v for v in value.split(" ") if v]
+        elif isinstance(value, collections.abc.Sequence):
+            return [str(v) for v in value]
+        else:
+            raise TypeError(value)
 
 
-def read_config():
-    # type: ()->ConfigDict
-    config = configparser.ConfigParser(inline_comment_prefixes='#')
-    config.read(CONFIG_FILES)
-    return compose_dict(config)
+class Config(configparser.ConfigParser):
+    """Dictionary to store the configurations."""
 
+    def __init__(self) -> None:
+        super().__init__(inline_comment_prefixes="#")
+        super().read(CONFIG_FILES)
 
-def compose_dict(config):
-    # type: (Union[Mapping[str, Any], configparser.ConfigParser])->ConfigDict
-    return ConfigDict(compose_dict_sub(k, v) for k, v in config.items())
-
-
-def compose_dict_sub(key, value):
-    # type: (str, Any)->Tuple[str, Any]
-    if hasattr(value, 'items'):
-        return (key, compose_dict(value))
-    elif key.endswith('@list'):
-        return key[:-5], [v for v in value.split(' ') if v] if value else []
-    else:
-        return key, value
+    def __getitem__(self, key: Any) -> Any:
+        return SectionWrapper(super().__getitem__(key))
