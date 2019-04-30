@@ -1,0 +1,27 @@
+\section{Conclusion}\label{sec:conc}
+
+This paper introduces a Python 3 package ``\texttt{yaslha}'' to handle SLHA format, which can be installed via \texttt{PyPI}.
+... (TBW)
+
+This package is managed on \href{https://github.com}{GitHub}: \href{https://github.com/misho104/yaslha}{\texttt{misho104/yaslha}}.
+Bug reports, comments, questions, and contribution are welcome on the website.
+
+
+\section*{Acknowledgments}
+
+(To be written.)
+
+% The author thanks %
+% Florian Staub
+%...
+% for useful discussions and
+% Rafal Maselek
+% for bug reports.
+
+This work is under much influence from the packages \href{http://www.insectnation.org/projects/pyslha}{\texttt{PySLHA}} by Andy Buckley and \href{https://github.com/DavidMStraub/pylha}{\texttt{pylha}} by David M.~Straub.
+
+The author credits PyPI as the distributor, GitHub as the repository host, TravisCI and CoverAlls as the host of continuous integration with coverage, and ReadTheDocs as the host of documentation, of this package.
+
+The author (SI) is supported
+by the MIUR-PRIN project 2015P5SBHT 003 ``Search for the Fundamental Laws and Constituents''
+by INFN (to be clarified),...
