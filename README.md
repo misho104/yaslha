@@ -1,6 +1,9 @@
 [![Build Status](https://api.travis-ci.org/misho104/yaslha.svg?branch=master)](https://travis-ci.org/misho104/yaslha)
 [![Coverage Status](https://coveralls.io/repos/github/misho104/yaslha/badge.svg?branch=master)](https://coveralls.io/github/misho104/yaslha?branch=master)
+[![Doc Status](http://readthedocs.org/projects/yaslha/badge/)](https://yaslha.readthedocs.io/)
+[![PyPI version](https://badge.fury.io/py/yaslha.svg)](https://badge.fury.io/py/yaslha)
 [![License: MIT](https://img.shields.io/badge/License-MIT-ff25d1.svg)](https://github.com/misho104/yaslha/blob/master/LICENSE)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
 [yaslha](https://github.com/misho104/yaslha): Yet Another SLHA module for Python3
 =================================================================================
