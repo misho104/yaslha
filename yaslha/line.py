@@ -333,7 +333,8 @@ class ValueLine(AbsLine, metaclass=ABCMeta):
     def new(cls: Type[LT2], key: KeyType, value: SValue, comment: OS = None) -> LT2:
         """Construct line object according to the type of key.
 
-        The resulting object is an instance of a subclass of `ValueLine`.
+        The resulting object is an instance of a subclass of `ValueLine` but
+        not `DecayLine`.
         """
         if key is None:
             return cast(LT2, NoIndexLine(value, comment))

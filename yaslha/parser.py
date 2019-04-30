@@ -40,6 +40,7 @@ class SLHAParser:
                 yaslha.line.OneIndexLine,
                 yaslha.line.TwoIndexLine,
                 yaslha.line.ThreeIndexLine,
+                yaslha.line.DecayLine,  # for extensions
                 yaslha.line.CommentLine,
             ]
         elif isinstance(self.processing, yaslha.Decay):
