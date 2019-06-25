@@ -16,16 +16,11 @@ __version__ = "0.2.0"
 __author__ = "Sho Iwamoto / Misho"
 __license__ = "MIT"
 
-SLHA = yaslha.slha.SLHA
-Block = yaslha.block.Block
-InfoBlock = yaslha.block.InfoBlock
-Decay = yaslha.block.Decay
-
 cfg = yaslha.config.Config()
 
 
 def parse(text, input_type="AUTO", parser=None, **kwargs):
-    # type: (str, str, Any, Any)->SLHA
+    # type: (str, str, Any, Any)->yaslha.slha.SLHA
     """Parse a text to return an SLHA object."""
     if parser is None:
         if input_type.upper() == "AUTO":
@@ -41,7 +36,7 @@ def parse(text, input_type="AUTO", parser=None, **kwargs):
 
 
 def dump(slha, output_type="SLHA", dumper=None, **kwargs):
-    # type: (SLHA, str, Optional[yaslha.dumper.AbsDumper], Any)->str
+    # type: (yaslha.slha.SLHA, str, Optional[yaslha.dumper.AbsDumper], Any)->str
     """Output a dumped string of an SLHA object."""
     if dumper is None:
         if output_type.upper() == "JSON":
@@ -54,7 +49,7 @@ def dump(slha, output_type="SLHA", dumper=None, **kwargs):
 
 
 def parse_file(path, **kwargs):
-    # type: (Union[str, pathlib.Path], Any)->SLHA
+    # type: (Union[str, pathlib.Path], Any)->yaslha.slha.SLHA
     """Parse a file to return an SLHA object."""
     if isinstance(path, str):
         path = pathlib.Path(path)
@@ -62,7 +57,7 @@ def parse_file(path, **kwargs):
 
 
 def dump_file(data, path, **kwargs):
-    # type: (SLHA, Union[str, pathlib.Path], Any)->None
+    # type: (yaslha.slha.SLHA, Union[str, pathlib.Path], Any)->None
     """Write into a file a dumped string of an SLHA object."""
     with open(str(path), "w") as f:
         f.write(dump(data, **kwargs))

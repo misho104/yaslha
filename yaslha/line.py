@@ -101,7 +101,7 @@ class AbsLine(metaclass=ABCMeta):
         """Construct an object from a line if it maches the pattern."""
         match = cls.pattern().match(line)
         if match:
-            return cast(LT, cls(**match.groupdict()))
+            return cls(**match.groupdict())
         else:
             return None
 
@@ -221,10 +221,10 @@ class BlockHeadLine(AbsLine):
         if not name or len(kw) > 1:
             raise ValueError(kw)
         if len(dump) == 0:
-            return cast(LT, cls(name=name))
+            return cls(name=name)
         elif len(dump) == 2:
             if isinstance(dump[0], str) and dump[0].strip().upper() == "Q=":
-                return cast(LT, cls(name=name, q=_float(dump[1])))
+                return cls(name=name, q=_float(dump[1]))
         raise ValueError(dump)
 
     def _dump_comment(self) -> List[List[SFloat]]:
@@ -264,7 +264,7 @@ class DecayHeadLine(AbsLine):
         if not pid or len(kw) > 1:
             raise ValueError(kw)
         elif len(dump) == 1:
-            return cast(LT, cls(pid=int(pid), width=_float(dump[0])))
+            return cls(pid=int(pid), width=_float(dump[0]))
         raise ValueError(dump)
 
     def _dump_comment(self) -> List[List[SFloat]]:
@@ -303,7 +303,7 @@ class InfoLine(AbsLine):
         return [self.key, self.value]
 
     @classmethod
-    def _from_dump(cls: Type[LT], dump: Sequence[Any], **kw: Any) -> LT:
+    def _from_dump(cls: Type["InfoLine"], dump: Sequence[Any], **kw: Any) -> LT:
         if kw:
             raise ValueError(kw)
         if len(dump) == 2:
@@ -506,7 +506,7 @@ class DecayLine(ValueLine):
         return result
 
     @classmethod
-    def _from_dump(cls: Type[LT2], dump: Sequence[Any], **kw: Any) -> LT2:
+    def _from_dump(cls: Type["DecayLine"], dump: Sequence[Any], **kw: Any) -> LT2:
         if kw:
             raise ValueError(kw)
         if len(dump) >= 4:

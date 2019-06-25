@@ -141,7 +141,7 @@ def merge(ctx, **kwargs):
     later files. If -e option is specified, input from standard input (STDIN)
     is used as the last data.
     """
-    slha = yaslha.SLHA()
+    slha = yaslha.slha.SLHA()
     for i in kwargs["input"]:
         with open(i) as f:
             slha.merge(yaslha.parse(f.read()))

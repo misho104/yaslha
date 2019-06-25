@@ -199,6 +199,10 @@ class Block(AbsBlock[KeyType, ValueType, ValueLine, str]):
 
     def get(self, *key: Any, default: T) -> Union[ValueType, T]:
         """Return the value for the key if exists, or default value."""
+        # Here, `key` is always a tuple.
+        # Meanwhile, the key for `__getitem__` is a tuple only if length > 1.
+        if isinstance(key, tuple) and len(key) == 1:
+            key = key[0]
         if key in self._data:
             return self.__getitem__(key)
         else:

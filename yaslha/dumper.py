@@ -20,13 +20,13 @@ from typing import (
 import ruamel.yaml
 
 import yaslha
-import yaslha.block
 import yaslha.config
 import yaslha.line
 import yaslha.utility
 from yaslha._line import format_comment
+from yaslha.block import Block, Decay, InfoBlock
 
-BlockLike = Union[yaslha.block.Block, yaslha.block.InfoBlock, yaslha.block.Decay]
+BlockLike = Union[Block, InfoBlock, Decay]
 T = TypeVar("T")
 
 
@@ -107,7 +107,7 @@ class AbsDumper(metaclass=ABCMeta):
         """Return dumped string of an SLHA object."""
 
     def _blocks_sorted(self, slha):
-        # type: (yaslha.slha.SLHA)->List[Union[yaslha.Block, yaslha.InfoBlock]]
+        # type: (yaslha.slha.SLHA)->List[Union[Block, InfoBlock]]
         slha.normalize(decays=False)
         if self.config("blocks_order") == BlocksOrder.KEEP:
             return list(slha.blocks.values())
@@ -119,7 +119,7 @@ class AbsDumper(metaclass=ABCMeta):
         return [slha.blocks[name] for name in block_names]
 
     def _decays_sorted(self, slha):
-        # type: (yaslha.slha.SLHA)->List[yaslha.Decay]
+        # type: (yaslha.slha.SLHA)->List[Decay]
         slha.normalize(blocks=False)
         if self.config("values_order") == ValuesOrder.KEEP:
             return list(slha.decays.values())
@@ -134,7 +134,7 @@ class AbsDumper(metaclass=ABCMeta):
         # type: (BlockLike)->Sequence[yaslha.line.AbsLine]
         sort = self.config("values_order") != ValuesOrder.KEEP
         if (
-            isinstance(block, yaslha.block.Block)
+            isinstance(block, Block)
             and self.config("values_order") == ValuesOrder.DEFAULT
             and block.name == "MASS"
         ):
@@ -247,7 +247,7 @@ class SLHADumper(AbsDumper):
             lines.extend(line.to_slha(self.line_option))
 
         # special spacing for MASS block
-        if isinstance(block, yaslha.block.Block) and block.name == "MASS":
+        if isinstance(block, Block) and block.name == "MASS":
             re_mass = re.compile(r"^\s*(\d+)")
             lines = [
                 re_mass.sub(lambda x: " {:>9}".format(x.group(1)), i) for i in lines
