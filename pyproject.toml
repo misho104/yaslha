@@ -14,6 +14,7 @@ click = "^7.0"
 colorama = "^0.4"
 coloredlogs = "^10.0"
 typing-extensions = "^3.7"
+numpy = "^1.16"
 
 [tool.poetry.dev-dependencies]
 nose = "^1.3"
