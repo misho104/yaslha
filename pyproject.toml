@@ -9,12 +9,12 @@ repository = "https://github.com/misho104/yaslha"
 
 [tool.poetry.dependencies]
 python = "^3.5"
-click = "^7.0"
-"ruamel.yaml" = "^0.15"
+click = "^7.1"
+"ruamel.yaml" = "^0.16"
 colorama = "^0.4"
-coloredlogs = "^10.0"
+coloredlogs = "^15.0"
 typing-extensions = "^3.7"
-numpy = "^1.16"
+numpy = "^1.20"
 
 [tool.poetry.dev-dependencies]
 nose = "^1.3"
