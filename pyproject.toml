@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yaslha"
-version = "0.2.1"
+version = "0.2.2"
 description = "A Python package to handle SLHA (SUSY Les Houches Accord) files."
 authors = ["Sho Iwamoto (Misho) <webmaster@misho-web.com>"]
 license = "MIT"
