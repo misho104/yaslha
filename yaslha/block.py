@@ -116,7 +116,8 @@ class AbsBlock(GenericBlock[KT, CT], Generic[KT, VT, LT, CT], metaclass=ABCMeta)
         else:
             raise TypeError(obj)
         self._comment = CommentInterface(self)
-        self._data = NotImplemented  # must be initialized in subclasses
+        # _data must be initialized in subclasses
+        self._data = NotImplemented  # type: Any
 
     @property
     def name(self) -> str:
@@ -223,12 +224,21 @@ class Block(AbsBlock[KeyType, ValueType, ValueLine, str]):
     def _lines(self, sort: bool = False) -> Iterator[Tuple[KeyType, ValueLine]]:
         if sort:
             key_line_tuples = list(self._data.items())
-            key_line_tuples.sort(key=lambda k: k[0])
+            key_line_tuples.sort(key=lambda k: self._lines_sort_key(k[0]))
             for i in key_line_tuples:
                 yield i
         else:
             for i in self._data.items():
                 yield i
+
+    @staticmethod
+    def _lines_sort_key(k: KeyType) -> List[int]:
+        if isinstance(k, int):
+            return [k]
+        elif isinstance(k, list):
+            return k
+        else:
+            return []
 
     def _get_comment(self, key: KeyType) -> str:
         return self._data[key].comment

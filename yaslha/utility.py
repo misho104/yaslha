@@ -74,11 +74,12 @@ def sort_blocks_default(block_names: Sequence[str]) -> List[str]:
 
 def sort_pids_default(pids: Sequence[T]) -> List[Union[T, int]]:
     """Sort block names according to specified order."""
-    tmp = defaultdict(list)  # type: MutableMapping[str, List[Union[T, int]]]
+    tmp = defaultdict(list)  # type: MutableMapping[str, List[int]]
+    non_int = []  # type: List[Union[T, int]]
 
     for i in pids:
         if not isinstance(i, int):
-            tmp["11_not_int"].append(i)  # fail safe
+            non_int.append(i)  # fail safe
             continue
 
         j = i % 1000000
@@ -103,4 +104,7 @@ def sort_pids_default(pids: Sequence[T]) -> List[Union[T, int]]:
             tmp["08_snu"].append(i)
         else:
             tmp["09_susy"].append(i)
-    return [pid for group in sorted(tmp.keys()) for pid in sorted(tmp[group])]
+    # tricks to avoid mypy errors
+    pids = list(pid for group in sorted(tmp.keys()) for pid in sorted(tmp[group]))
+    non_int = pids + non_int
+    return non_int
