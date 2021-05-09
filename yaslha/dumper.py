@@ -356,7 +356,7 @@ class YAMLDumper(AbsMarshalDumper):
         """Return YAML-format text of an SLHA object."""
         stream = ruamel.yaml.compat.StringIO()
         self.yaml.dump(self.marshal(slha), stream)
-        return cast(str, stream.getvalue())
+        return str(stream.getvalue())
 
 
 class JSONDumper(AbsMarshalDumper):
