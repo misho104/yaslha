@@ -10,29 +10,29 @@ repository = "https://github.com/misho104/yaslha"
 [tool.poetry.dependencies]
 python = "^3.7.1 || ^3.8"
 click = "^7.1"
-"ruamel.yaml" = "^0.16"
-colorama = "^0.4"
+"ruamel.yaml" = "^0.17.4"
+colorama = "^0.4.4"
 coloredlogs = "^15.0"
-typing-extensions = "^3.7"
+typing-extensions = "^3.10"
 numpy = "^1.20"
 
 [tool.poetry.dev-dependencies]
 nose = "^1.3"
-coverage = "^4.5"
-coveralls = "^1.5"
-mypy = "^0.710"
-flake8 = "^3.7"
-flake8-builtins = "^1.4"
+coverage = "^5.5"
+coveralls = "^3.0"
+mypy = "^0.812"
+flake8 = "^3.9"
+flake8-builtins = "^1.5"
 flake8-commas = "^2.0"
-flake8-comprehensions = "^1.4"
-flake8-docstrings = "^1.3"
-flake8-isort = "^2.6"
-flake8-logging-format = "^0.6"
-pep8-naming = "^0.7"
+flake8-comprehensions = "^3.4"
+flake8-docstrings = "^1.6"
+flake8-isort = "^4.0"
+flake8-logging-format = "^0.6.0"
+pep8-naming = "^0.11.1"
 
 [tool.poetry.scripts]
 yaslha= "yaslha.script:main"
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["poetry>=1.1.6"]
 build-backend = "poetry.masonry.api"
