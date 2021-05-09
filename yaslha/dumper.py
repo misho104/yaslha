@@ -14,7 +14,6 @@ from typing import (
     Sequence,
     TypeVar,
     Union,
-    cast,
 )
 
 import ruamel.yaml
