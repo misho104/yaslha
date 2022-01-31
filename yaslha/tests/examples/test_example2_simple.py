@@ -6,7 +6,7 @@ This example contains simple read/write of SLHA data.
 import logging
 import unittest
 
-from nose.tools import assert_raises, eq_, ok_, raises  # noqa: F401
+import pytest
 
 from yaslha.parser import SLHAParser
 
@@ -72,75 +72,75 @@ Block ad Q= 4.64649125e+02
 
     def test_read_1(self):
         # Reading data of multi-param blocks
-        eq_(self.slha["STOPMIX", 1, 1], 5.37975095e-01)
-        eq_(self.slha["AU"][3, 3], -5.04995511e02)
+        assert self.slha["STOPMIX", 1, 1] == 5.37975095e-01
+        assert self.slha["AU"][3, 3] == -5.04995511e02
 
         # To read data of no-param block, a dummy parameter None must be used.
         #  (usually "Block ALPHA" is only the case)
-        eq_(self.slha["ALPHA", None], -1.13716828e-01)
-        eq_(self.slha["ALPHA"][None], -1.13716828e-01)  # this syntax also works
+        assert self.slha["ALPHA", None] == -1.13716828e-01
+        assert self.slha["ALPHA"][None] == -1.13716828e-01  # this syntax also works
 
         # reading the "Q" value of a block
-        eq_(self.slha["GAUGE"].q, 4.64649125e02)
+        assert self.slha["GAUGE"].q == 4.64649125e02
 
     def test_update(self):
         self.slha["STOPMIX"][1, 1] = 0.5
         self.slha["AU", 1, 1] = 0.001
         self.slha["ALPHA", None] = 1.0
 
-        eq_(self.slha["STOPMIX", 1, 1], 0.5)
-        eq_(self.slha["AU"][1, 1], 0.001)
-        eq_(self.slha["ALPHA"][None], 1.0)
+        assert self.slha["STOPMIX", 1, 1] == 0.5
+        assert self.slha["AU"][1, 1] == 0.001
+        assert self.slha["ALPHA"][None] == 1.0
 
         # create new block with multi params
         self.slha["lambda", 1, 2, 3] = 0.01
-        eq_(self.slha["LAMBDA", 1, 2, 3], 0.01)
+        assert self.slha["LAMBDA", 1, 2, 3] == 0.01
 
         # the "Q" value
         self.slha["GAUGE"].q = 400.0
-        eq_(self.slha["GAUGE"].q, 400.0)
+        assert self.slha["GAUGE"].q == 400.0
 
         # Q value can be set to any blocks (even if physically invalid).
         self.slha["MASS"].q = 123.45
-        eq_(self.slha["mass"].q, 123.45)
+        assert self.slha["mass"].q == 123.45
 
     def test_delete(self):
         # multi-param or no-param
         del self.slha["STOPMIX", 1, 1]
         del self.slha["Alpha"][None]
 
-        with assert_raises(KeyError):
+        with pytest.raises(KeyError):
             self.slha["stopmix", 1, 1]
 
-        with assert_raises(KeyError):
+        with pytest.raises(KeyError):
             self.slha["Alpha", None]
 
         # removing Q-value
         self.slha["gauge"].q = None
-        eq_(self.slha["gauge"].q, None)
+        assert self.slha["gauge"].q is None
 
     def test_info_block(self):
         # blocks with names ending with "INFO" is specially treated.
-        eq_(self.slha["spinfo"][1], ("SOFTSUSY",))
-        eq_(self.slha["spinfo"][2], ("1.8.4",))
-        eq_(self.slha["spinfo"][3], ("Error Message 1", "Error Message 2"))
+        assert self.slha["spinfo"][1] == ("SOFTSUSY",)
+        assert self.slha["spinfo"][2] == ("1.8.4",)
+        assert self.slha["spinfo"][3] == ("Error Message 1", "Error Message 2")
 
         # all the contents must be a list of string.
         self.slha["dcinfo", 1] = ["DecayProgramName"]
 
-        with assert_raises(TypeError):
+        with pytest.raises(TypeError):
             self.slha["dcinfo", 2] = 1.0
 
         self.slha["dcinfo", 3] = ["Error message."]
         self.slha["dcinfo", 4] = ["Warning 1", "Warning 2"]
 
-        eq_(self.slha["DCINFO"][3], ("Error message.",))
-        ok_(self.slha["DCINFO"][4], ("Warning 1", "Warning 2"))
+        assert self.slha["DCINFO"][3] == ("Error message.",)
+        assert self.slha["DCINFO"][4] == ("Warning 1", "Warning 2")
 
         # append a value
         self.slha["dcinfo"].append(4, "Warning 3")
 
-        eq_(len(self.slha["dcinfo"][4]), 3)
+        assert len(self.slha["dcinfo"][4]) == 3
 
 
 # cspell:ignore softsusy modsel sminputs msbar drbar mgut mssm higgs hmix sugra tanb

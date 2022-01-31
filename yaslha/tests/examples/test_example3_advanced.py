@@ -6,7 +6,7 @@ This example contains simple read/write of SLHA data.
 import logging
 import unittest
 
-from nose.tools import assert_raises, eq_, ok_, raises  # noqa: F401
+import pytest
 
 from yaslha.parser import SLHAParser
 
@@ -70,44 +70,46 @@ Block ad Q= 4.64649125e+02
 
     def test_get(self):
         # default accessor raises KeyError if missing
-        with assert_raises(KeyError):
+        with pytest.raises(KeyError):
             self.slha["Ad"][1, 1]
-        with assert_raises(KeyError):
+        with pytest.raises(KeyError):
             self.slha["Ad", 1, 1]
 
         # get method allows to use default values
-        eq_(self.slha["Ad"].get(3, 3, default=0), -7.97992485e02)
-        eq_(self.slha["Ad"].get(2, 2, default=-123.456), -123.456)
-        eq_(self.slha["Ad"].get(1, 1, default=None), None)
+        assert self.slha["Ad"].get(3, 3, default=0) == -7.97992485e02
+        assert self.slha["Ad"].get(2, 2, default=-123.456) == -123.456
+        assert self.slha["Ad"].get(1, 1, default=None) is None
 
-        eq_(self.slha.get("Au", 3, 3, default=0), -5.04995511e02)
-        eq_(self.slha.get("Au", 2, 2, default=-1.0), -1.0)
-        eq_(self.slha.get("Ad", 1, 1, default="NOTFOUND"), "NOTFOUND")
+        assert self.slha.get("Au", 3, 3, default=0) == -5.04995511e02
+        assert self.slha.get("Au", 2, 2, default=-1.0) == -1.0
+        assert self.slha.get("Ad", 1, 1, default="NOTFOUND") == "NOTFOUND"
 
     def test_iterator_within_a_block(self):
         # block works as an iterator
         for key in self.slha["hmix"]:
-            ok_(key in [1, 2, 3, 4])
+            assert key in [1, 2, 3, 4]
 
         minpar_keys = list(self.slha["minpar"])
-        eq_(minpar_keys, [3, 2, 4, 1, 5])  # order is saved
+        assert minpar_keys == [3, 2, 4, 1, 5]  # order is saved
 
         alpha_keys = list(self.slha["alpha"])
-        eq_(alpha_keys, [None])  # no-param line has None as a spurious key
+        assert alpha_keys == [None]  # no-param line has None as a spurious key
 
         stopmix_keys = list(self.slha["stopmix"])
-        eq_(stopmix_keys, [(1, 1), (1, 2), (2, 1), (2, 2)])  # multi-param as tuples
+        assert stopmix_keys == [(1, 1), (1, 2), (2, 1), (2, 2)]  # multi-param as tuples
 
         # one can explicitly call Block.keys() method.
-        eq_(list(self.slha["hmix"]), [1, 2, 3, 4])
-        eq_(list(self.slha["hmix"].keys()), [1, 2, 3, 4])
+        assert list(self.slha["hmix"]) == [1, 2, 3, 4]
+        assert list(self.slha["hmix"].keys()) == [1, 2, 3, 4]
 
         for k, v in self.slha["hmix"].items():
-            eq_(v, self.slha["hmix", k])
+            assert v == self.slha["hmix", k]
 
         for k, v in self.slha["stopmix"].items():
-            eq_(v, self.slha["stopmix"][k])
-            eq_(v, self.slha["stopmix", k])  # you may notice this syntax is too tricky.
+            assert v == self.slha["stopmix"][k]
+            assert (
+                v == self.slha["stopmix", k]
+            )  # you may notice this syntax is too tricky.
 
     def test_block_names(self):
         # SLHA.block_names() gives a generator for block names.
@@ -124,9 +126,9 @@ Block ad Q= 4.64649125e+02
             "ad",
         ]
         for block_name in self.slha.blocks.keys():
-            ok_(block_name.lower() in expected_blocks)
+            assert block_name.lower() in expected_blocks
             expected_blocks.remove(block_name.lower())
-        eq_(len(expected_blocks), 0)
+        assert len(expected_blocks) == 0
 
 
 # cspell:ignore softsusy modsel sminputs msbar drbar mgut mssm higgs hmix sugra tanb

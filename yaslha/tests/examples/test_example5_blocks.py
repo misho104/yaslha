@@ -7,7 +7,7 @@ import copy
 import logging
 import unittest
 
-from nose.tools import assert_raises, eq_, ok_, raises  # noqa: F401
+import pytest
 
 from yaslha.block import Block, Decay
 from yaslha.parser import SLHAParser
@@ -60,54 +60,54 @@ DECAY   999     1.00E-02    # data for testing
         del gauge[3]
 
         # the original SLHA data **is** affected.
-        eq_(self.slha["gauge"][1], 0.1)
-        eq_(self.slha["gauge", 2], 0.4)
-        eq_(self.slha["gauge"].q, 100.123)
-        with assert_raises(KeyError):
+        assert self.slha["gauge"][1] == 0.1
+        assert self.slha["gauge", 2] == 0.4
+        assert self.slha["gauge"].q == 100.123
+        with pytest.raises(KeyError):
             self.slha["gauge", 3]
 
     def test_basic_block_operation_2(self):
         # if you want to unlink the block from SLHA, you must use deep-copy.
         gauge_copied = copy.deepcopy(self.slha["Gauge"])
 
-        eq_(gauge_copied[1], 3.60872342e-01)
-        eq_(gauge_copied.q, 4.64649125e02)  # the data and q value are copied
+        assert gauge_copied[1] == 3.60872342e-01
+        assert gauge_copied.q == 4.64649125e02  # the data and q value are copied
 
         # changing the contents of the new block
         gauge_copied[2] = -0.2
         del gauge_copied[3]
 
         # the new block is modified
-        eq_(gauge_copied[2], -0.2)
-        with assert_raises(KeyError):
+        assert gauge_copied[2] == -0.2
+        with pytest.raises(KeyError):
             gauge_copied[3]
 
         # the original SLHA data is not modified.
-        eq_(self.slha["gauge", 1], 3.60872342e-01)
-        eq_(self.slha["gauge", 2], 6.46479280e-01)
-        eq_(self.slha["gauge", 3], 1.09623002e00)
+        assert self.slha["gauge", 1] == 3.60872342e-01
+        assert self.slha["gauge", 2] == 6.46479280e-01
+        assert self.slha["gauge", 3] == 1.09623002e00
 
         # you may replace the block
         self.slha["gauge"] = gauge_copied
-        eq_(self.slha["gauge", 1], 3.60872342e-01)
-        eq_(self.slha["gauge", 2], -0.2)
-        eq_(self.slha.get("gauge", 3), None)
+        assert self.slha["gauge", 1] == 3.60872342e-01
+        assert self.slha["gauge", 2] == -0.2
+        assert self.slha.get("gauge", 3) is None
 
     def test_slha_iterators_blocks(self):
         # iterator only for ordinal blocks
         expected = ["spinfo", "modsel", "alpha", "gauge", "au"]
         for name in self.slha.blocks:
-            ok_(name.lower() in expected)
+            assert name.lower() in expected
             expected.remove(name.lower())
-        ok_(len(expected) == 0)
+        assert len(expected) == 0
 
     def test_slha_iterators_decays(self):
         # iterator only for decay blocks
         expected = [1000023, 999]
         for pid in self.slha.decays:
-            ok_(pid in expected)
+            assert pid in expected
             expected.remove(pid)
-        ok_(len(expected) == 0)
+        assert len(expected) == 0
 
     def test_add_block(self):
         # a new block
@@ -118,11 +118,11 @@ DECAY   999     1.00E-02    # data for testing
         # assign a new block to SLHA object
         self.slha["NEWBLOCK"] = new_block
 
-        eq_(self.slha["newblock", 3], 10.05)
-        eq_(self.slha["newblock"].q, 123.456)
+        assert self.slha["newblock", 3] == 10.05
+        assert self.slha["newblock"].q == 123.456
 
         # the block name is modified accordingly
-        eq_(self.slha["NewBlock"].name.lower(), "newblock")
+        assert self.slha["NewBlock"].name.lower() == "newblock"
 
     def test_add_block_2(self):
         # another method to add block
@@ -131,8 +131,8 @@ DECAY   999     1.00E-02    # data for testing
         new_block[3] = 10.05
 
         self.slha.add_block(new_block)
-        eq_(self.slha["newblock", 3], 10.05)
-        eq_(self.slha["newblock"].q, 123.456)
+        assert self.slha["newblock", 3] == 10.05
+        assert self.slha["newblock"].q == 123.456
 
     def test_add_decay_block(self):
         # a new block
@@ -144,20 +144,20 @@ DECAY   999     1.00E-02    # data for testing
         # assign a new block to SLHA object
         self.slha[789] = new_decay
 
-        eq_(self.slha[789].br(123, 123), 0.25)
-        eq_(self.slha[789].partial_width(123, -123), 0.02)
-        eq_(self.slha[789].width, 0.04)
+        assert self.slha[789].br(123, 123) == 0.25
+        assert self.slha[789].partial_width(123, -123) == 0.02
+        assert self.slha[789].width == 0.04
 
     def test_delete_block(self):
         # remove a block
         del self.slha["modsel"]
 
-        with assert_raises(KeyError):
+        with pytest.raises(KeyError):
             self.slha["modsel"]
 
         # remove a decay block
         del self.slha[999]
-        eq_(list(self.slha.decays.keys()), [1000023])
+        assert list(self.slha.decays.keys()) == [1000023]
 
 
 # cspell:ignore softsusy modsel sminputs msbar drbar mgut mssm higgs hmix sugra tanb

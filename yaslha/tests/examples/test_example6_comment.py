@@ -6,7 +6,7 @@ This example contains comment handlings.
 import logging
 import unittest
 
-from nose.tools import assert_raises, eq_, ok_, raises  # noqa: F401
+import pytest
 
 from yaslha.parser import SLHAParser
 
@@ -73,72 +73,76 @@ DECAY   1000023     1.95831641E-02   # chi_20
         # simple examples of pre-head, head, and line comments
 
         # pre-head comment is always List[str]
-        eq_(self.slha["modsel"].comment.pre["head"], ["# Input parameters"])
-        eq_(self.slha["spinfo"].comment.pre["head"], ["# SLHA 1.0", "# calculator"])
+        assert self.slha["modsel"].comment.pre["head"] == ["# Input parameters"]
+        assert self.slha["spinfo"].comment.pre["head"] == ["# SLHA 1.0", "# calculator"]
 
         # head comment is always str
-        eq_(self.slha["modsel"].comment["head"], "Select model")
-        eq_(self.slha["spinfo"].comment["head"], "Program information")
+        assert self.slha["modsel"].comment["head"] == "Select model"
+        assert self.slha["spinfo"].comment["head"] == "Program information"
 
         # line-tail comment depends on block type
-        eq_(self.slha["modsel"].comment[1], "sugra")  # str for ordinary block
-        eq_(self.slha["mass"].comment[1000001], "~d_L")
-        eq_(self.slha["spinfo"].comment[1], ["name"])  # List[str] for INFO blocks
-        eq_(self.slha["spinfo"].comment[2], ["version number"])
+        assert self.slha["modsel"].comment[1] == "sugra"  # str for ordinary block
+        assert self.slha["mass"].comment[1000001] == "~d_L"
+        assert self.slha["spinfo"].comment[1] == ["name"]  # List[str] for INFO block
+        assert self.slha["spinfo"].comment[2] == ["version number"]
 
         # another method to access
         modsel = self.slha["modsel"]
-        eq_(modsel.comment.pre["head"], ["# Input parameters"])
-        eq_(modsel.comment["head"], "Select model")
-        eq_(modsel.comment[1], "sugra")
+        assert modsel.comment.pre["head"] == ["# Input parameters"]
+        assert modsel.comment["head"] == "Select model"
+        assert modsel.comment[1] == "sugra"
 
         # comments between lines are recognized as "pre" comments of the next lines.
         minpar = self.slha["minpar"]
-        eq_(minpar.comment.pre[1], ["# comment between lines (1)"])  # always List[str]
-        eq_(minpar.comment.pre[3], ["# comment between lines (2)"])
+        assert minpar.comment.pre[1] == [
+            "# comment between lines (1)"
+        ]  # always List[str]
+        assert minpar.comment.pre[3] == ["# comment between lines (2)"]
 
         # comments after block are recognized as pre-block comments of the next blocks.
-        eq_(self.slha["mass"].comment.pre["head"], ["# comment after minpar"])
+        assert self.slha["mass"].comment.pre["head"] == ["# comment after minpar"]
 
         # the comment at the end of file is specially treated
-        eq_(self.slha.tail_comment, ["#comment at SLHA-tail"])  # always List[str]
+        assert self.slha.tail_comment == ["#comment at SLHA-tail"]  # always List[str]
 
         # empty string (or empty list) is returned if comment does not exist.
-        eq_(self.slha["hmix"].comment.pre["head"], [])
-        eq_(self.slha["hmix"].comment["head"], "")
-        eq_(self.slha["hmix"].comment.pre[1], [])
-        eq_(self.slha["hmix"].comment[1], "")
+        assert self.slha["hmix"].comment.pre["head"] == []
+        assert self.slha["hmix"].comment["head"] == ""
+        assert self.slha["hmix"].comment.pre[1] == []
+        assert self.slha["hmix"].comment[1] == ""
 
     def test_read_2(self):
         # for decay blocks
-        eq_(self.slha[1000023].comment.pre["head"], ["#", "#         PDG        Width"])
-        eq_(
-            self.slha[1000023].comment.pre[11, -2000011],
-            ["#    BR                NDA      ID1      ID2"],
-        )
-        eq_(self.slha[1000023].comment[11, -2000011], "BR(chi_20 -> ~e_R+ e- )")
+        assert self.slha[1000023].comment.pre["head"] == [
+            "#",
+            "#         PDG        Width",
+        ]
+        assert self.slha[1000023].comment.pre[11, -2000011] == [
+            "#    BR                NDA      ID1      ID2"
+        ]
+        assert self.slha[1000023].comment[11, -2000011] == "BR(chi_20 -> ~e_R+ e- )"
 
     def test_update(self):
         modsel = self.slha["modsel"]
         # line comments are a string.
         modsel.comment["head"] = "new head comment"
         modsel.comment[1] = "new comment 2"
-        eq_(self.slha["modsel"].comment["head"], "new head comment")
-        eq_(self.slha["modsel"].comment[1], "new comment 2")
+        assert self.slha["modsel"].comment["head"] == "new head comment"
+        assert self.slha["modsel"].comment[1] == "new comment 2"
 
         # pre-line comments are a list of string.
         modsel.comment.pre["head"] = ["new pre-head comment"]
         modsel.comment.pre[1] = ["new comment 1"]
-        eq_(self.slha["modsel"].comment.pre["head"], ["new pre-head comment"])
-        eq_(self.slha["modsel"].comment.pre[1], ["new comment 1"])
+        assert self.slha["modsel"].comment.pre["head"] == ["new pre-head comment"]
+        assert self.slha["modsel"].comment.pre[1] == ["new comment 1"]
 
         # for INFO blocks, line comments are a list of string.
-        eq_(self.slha["spinfo"].comment[1], ["name"])
-        eq_(self.slha["spinfo"].comment[2], ["version number"])
+        assert self.slha["spinfo"].comment[1] == ["name"]
+        assert self.slha["spinfo"].comment[2] == ["version number"]
         self.slha["spinfo"].comment[1] = ["new comment 1"]
         self.slha["spinfo"].comment[2] = ["new comment 2"]
-        eq_(self.slha["spinfo"].comment[1], ["new comment 1"])
-        eq_(self.slha["spinfo"].comment[2], ["new comment 2"])
+        assert self.slha["spinfo"].comment[1] == ["new comment 1"]
+        assert self.slha["spinfo"].comment[2] == ["new comment 2"]
 
         # add comments
         self.slha["minpar", 6] = 0.5
@@ -146,14 +150,14 @@ DECAY   1000023     1.95831641E-02   # chi_20
         self.slha["minpar"].comment.pre[6] = ["extra parameters"]
         self.slha["minpar"].comment[6] = "extra 1"
         self.slha["minpar"].comment[7] = "extra 2"
-        eq_(self.slha["minpar"].comment.pre[6], ["extra parameters"])
-        eq_(self.slha["minpar"].comment[6], "extra 1")
-        eq_(self.slha["minpar"].comment[7], "extra 2")
+        assert self.slha["minpar"].comment.pre[6] == ["extra parameters"]
+        assert self.slha["minpar"].comment[6] == "extra 1"
+        assert self.slha["minpar"].comment[7] == "extra 2"
 
         # one cannot assign comments to non-existing lines
-        with assert_raises(KeyError):
+        with pytest.raises(KeyError):
             self.slha["minpar"].comment[8] = "non-existing line comment"
-        with assert_raises(KeyError):
+        with pytest.raises(KeyError):
             self.slha["minpar"].comment.pre[8] = "non-existing pre-line comment"
 
     def test_delete(self):
@@ -163,10 +167,10 @@ DECAY   1000023     1.95831641E-02   # chi_20
         self.slha["minpar"].comment.pre["head"] = None
         self.slha["minpar"].comment["head"] = None
 
-        eq_(self.slha["minpar"].comment[1], "")
-        eq_(self.slha["minpar"].comment.pre[1], [])
-        eq_(self.slha["minpar"].comment.pre["head"], [])
-        eq_(self.slha["minpar"].comment["head"], "")  # note the different types
+        assert self.slha["minpar"].comment[1] == ""
+        assert self.slha["minpar"].comment.pre[1] == []
+        assert self.slha["minpar"].comment.pre["head"] == []
+        assert self.slha["minpar"].comment["head"] == ""  # note the different types
 
 
 # cspell:ignore softsusy modsel sminputs msbar drbar mgut mssm higgs hmix sugra tanb

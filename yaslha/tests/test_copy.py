@@ -4,7 +4,7 @@ import copy
 import logging
 import unittest
 
-from nose.tools import eq_
+from pytest import approx
 
 from yaslha.parser import SLHAParser
 
@@ -47,53 +47,53 @@ DECAY   999     1.00E-02    # data for testing
         self.slha = parser.parse(self.slha_string)
 
     def test_copy(self):
-        eq_(self.slha["au", 3, 3], -5.04995511e02)
-        eq_(self.slha["spinfo", 2], ("1.8.4",))
-        eq_(self.slha[999].partial_width(123, 123, 123), 0.40 * 0.01)
+        assert self.slha["au", 3, 3] == -5.04995511e02
+        assert self.slha["spinfo", 2] == ("1.8.4",)
+        assert self.slha[999].partial_width(123, 123, 123) == approx(0.40 * 0.01)
 
         c = copy.copy(self.slha)
 
-        eq_(c["au", 3, 3], -5.04995511e02)
-        eq_(c["spinfo", 2], ("1.8.4",))
-        eq_(c[999].br(123, 123, 123), 0.40)
+        assert c["au", 3, 3] == -5.04995511e02
+        assert c["spinfo", 2] == ("1.8.4",)
+        assert c[999].br(123, 123, 123) == 0.40
 
         c["au", 3, 3] = 1
         c["spinfo"].append(2, "another line")
         c[999].set_partial_width(123, 123, 123, 0.0)
 
-        eq_(c["au", 3, 3], 1)
-        eq_(c["spinfo", 2], ("1.8.4", "another line"))
-        eq_(c[999].partial_width(123, 123, 123), 0)
-        eq_(c[999].width, 0.006)
+        assert c["au", 3, 3] == 1
+        assert c["spinfo", 2] == ("1.8.4", "another line")
+        assert c[999].partial_width(123, 123, 123) == 0
+        assert c[999].width == 0.006
 
-        eq_(self.slha["au", 3, 3], 1)
-        eq_(self.slha["spinfo", 2], ("1.8.4", "another line"))
-        eq_(self.slha[999].partial_width(123, 123, 123), 0)
-        eq_(self.slha[999].width, 0.006)
+        assert self.slha["au", 3, 3] == 1
+        assert self.slha["spinfo", 2] == ("1.8.4", "another line")
+        assert self.slha[999].partial_width(123, 123, 123) == 0
+        assert self.slha[999].width == 0.006
 
     def test_deepcopy(self):
-        eq_(self.slha["au", 3, 3], -5.04995511e02)
-        eq_(self.slha["spinfo", 2], ("1.8.4",))
-        eq_(self.slha[999].partial_width(123, 123, 123), 0.40 * 0.01)
+        assert self.slha["au", 3, 3] == -5.04995511e02
+        assert self.slha["spinfo", 2] == ("1.8.4",)
+        assert self.slha[999].partial_width(123, 123, 123) == 0.40 * 0.01
 
         c = copy.deepcopy(self.slha)
 
-        eq_(c["au", 3, 3], -5.04995511e02)
-        eq_(c["spinfo", 2], ("1.8.4",))
-        eq_(c[999].br(123, 123, 123), 0.40)
+        assert c["au", 3, 3] == -5.04995511e02
+        assert c["spinfo", 2] == ("1.8.4",)
+        assert c[999].br(123, 123, 123) == 0.40
 
         c["au", 3, 3] = 1
         c["spinfo"].append(2, "another line")
         c[999].set_partial_width(123, 123, 123, 0.0)
 
-        eq_(c["au", 3, 3], 1)
-        eq_(c["spinfo", 2], ("1.8.4", "another line"))
-        eq_(c[999].partial_width(123, 123, 123), 0)
-        eq_(c[999].width, 0.006)
+        assert c["au", 3, 3] == 1
+        assert c["spinfo", 2] == ("1.8.4", "another line")
+        assert c[999].partial_width(123, 123, 123) == 0
+        assert c[999].width == 0.006
 
-        eq_(self.slha["au", 3, 3], -5.04995511e02)
-        eq_(self.slha["spinfo", 2], ("1.8.4",))
-        eq_(self.slha[999].partial_width(123, 123, 123), 0.40 * 0.01)
+        assert self.slha["au", 3, 3] == -5.04995511e02
+        assert self.slha["spinfo", 2] == ("1.8.4",)
+        assert self.slha[999].partial_width(123, 123, 123) == 0.40 * 0.01
 
 
 # cspell:ignore softsusy modsel sminputs msbar drbar mgut mssm higgs hmix sugra tanb

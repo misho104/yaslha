@@ -6,8 +6,6 @@ This example contains how to handle DECAY blocks.
 import logging
 import unittest
 
-from nose.tools import assert_raises, eq_, ok_, raises  # noqa: F401
-
 from yaslha.parser import SLHAParser
 
 logger = logging.getLogger("test_info")
@@ -59,12 +57,12 @@ DECAY   999     1.00E-02    # data for testing
         # One can read decay blocks by the pid.
         n2_decay = self.slha[1000023]
 
-        eq_(n2_decay.width, 1.95831641e-2)  # total width
-        eq_(n2_decay.br(-2000011, 11), 3.38444885e-02)
-        eq_(n2_decay.br(11, -2000011), 3.38444885e-02)  # order is irrelevant
+        assert n2_decay.width == 1.95831641e-2  # total width
+        assert n2_decay.br(-2000011, 11) == 3.38444885e-02
+        assert n2_decay.br(11, -2000011) == 3.38444885e-02  # order is irrelevant
 
         expected_partial_width = 1.95831641e-2 * 3.38444885e-2
-        eq_(n2_decay.partial_width(11, -2000011), expected_partial_width)
+        assert n2_decay.partial_width(11, -2000011) == expected_partial_width
 
     def test_iterator_read(self):
         # decay block as an iterator
@@ -73,54 +71,54 @@ DECAY   999     1.00E-02    # data for testing
 
         for i, key in enumerate(self.slha[999].keys()):
             if i == 0:
-                eq_(sorted(key), [4, 123])
+                assert sorted(key) == [4, 123]
             elif i == 1:
-                eq_(sorted(key), [5, 123])
+                assert sorted(key) == [5, 123]
             elif i == 2:
-                eq_(sorted(key), [-123, 123])
+                assert sorted(key) == [-123, 123]
             elif i == 3:
-                eq_(sorted(key), [123, 123, 123])
+                assert sorted(key) == [123, 123, 123]
             else:
-                eq_(sorted(key), [1, 2, 3, 4])
+                assert sorted(key) == [1, 2, 3, 4]
 
         for i, key in enumerate(self.slha[999].keys(sort=True)):
             # the keys are sorted by the branding ratio descending.
             if i == 0:
-                eq_(sorted(key), [123, 123, 123])
+                assert sorted(key) == [123, 123, 123]
             elif i == 1:
-                eq_(sorted(key), [-123, 123])
+                assert sorted(key) == [-123, 123]
             elif i == 2:
-                eq_(sorted(key), [5, 123])
+                assert sorted(key) == [5, 123]
             elif i == 3:
-                eq_(sorted(key), [4, 123])
+                assert sorted(key) == [4, 123]
             else:
-                eq_(sorted(key), [1, 2, 3, 4])
+                assert sorted(key) == [1, 2, 3, 4]
 
         # branching ratio iterator
         for key, value in self.slha[999].items_br():
-            eq_(value, self.slha[999].br(*key))
+            assert value == self.slha[999].br(*key)
 
         # partial width iterator
         for key, value in self.slha[999].items_partial_width():
-            eq_(value, self.slha[999].partial_width(*key))
+            assert value == self.slha[999].partial_width(*key)
 
     def test_update_and_remove(self):
         # modification is made through partial width, not by BRs.
         decay = self.slha[999]
         decay.set_partial_width(123, 4, 0.005)
 
-        eq_(decay.partial_width(123, 4), 0.005)
-        eq_(decay.width, 0.014)
-        eq_(decay.br(123, 4), 0.005 / 0.014)
+        assert decay.partial_width(123, 4) == 0.005
+        assert decay.width == 0.014
+        assert decay.br(123, 4) == 0.005 / 0.014
 
         self.slha[999].set_partial_width(123, 123, 0.006)
-        eq_(self.slha[999].width, 0.020)
-        eq_(self.slha[999].br(123, 123), 0.006 / 0.020)
-        eq_(decay.br(123, 4), 0.005 / 0.020)
+        assert self.slha[999].width == 0.020
+        assert self.slha[999].br(123, 123) == 0.006 / 0.020
+        assert decay.br(123, 4) == 0.005 / 0.020
 
         self.slha[999].remove(123, 123)
         decay.remove(4, 3, 2, 1)
         decay.remove(5, 123)
-        eq_(self.slha[999].width, 0.012)
-        eq_(decay.br(123, -123), 0.003 / 0.012)
+        assert self.slha[999].width == 0.012
+        assert decay.br(123, -123) == 0.003 / 0.012
         # cspell:ignore softsusy sdecay mssm drbar

@@ -8,7 +8,6 @@ import unittest
 
 import coloredlogs
 from click.testing import CliRunner
-from nose.tools import eq_, ok_, raises  # noqa: F401
 
 import yaslha.dumper
 from yaslha.script import convert
@@ -21,7 +20,7 @@ def check_and_separate_output(result):
     if result.exit_code != 0:
         traceback.print_tb(result.exc_info[2])
         print(result.exc_info[1])
-    eq_(result.exit_code, 0)
+    assert result.exit_code == 0
 
     # separate logging lines to STDERR
     re_logline = re.compile(r"(yaslha\.\w+:)? (CRITICAL|ERROR|WARNING|DEBUG|INFO)[: ]")
@@ -45,8 +44,8 @@ def compare_lines(a, b):
     b.append("*END_OF_TEXT*")
     na, nb = len(a), len(b)
     for i, ta in enumerate(a):
-        eq_(ta, b[i] if i < nb else "")
-    eq_(na, nb)
+        assert ta == (b[i] if i < nb else "")
+    assert na == nb
 
 
 class TestConverter(unittest.TestCase):
