@@ -30,10 +30,10 @@ ACCEPTED_TYPES = ["SLHA", "YAML", "JSON"]  # decided to use capital letters
 class _Choice(click.Choice):
     def __init__(self, choices: Union[Sequence[str], Type[enum.Enum]]) -> None:
         if isinstance(choices, enum.EnumMeta):
-            self.keys = {c.name.upper(): c for c in choices}  # type: ignore
+            self.keys = {c.name.upper(): c for c in choices}
         else:
-            self.keys = {c.upper(): c.upper() for c in choices}
-        super().__init__(self.keys.keys())
+            self.keys = {c.upper(): c.upper() for c in choices}  # type: ignore
+        super().__init__(self.keys.keys())  # type: ignore
 
     def convert(self, value, param, ctx):  # type: ignore
         return self.keys[super().convert(value.upper(), param, ctx)]
