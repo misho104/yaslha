@@ -245,6 +245,20 @@ class SLHADumper(AbsDumper):
         for line in self._block_lines_ordered(block):
             lines.extend(line.to_slha(self.line_option))
 
+        # special spacing for MODSEL block
+        # because SDECAY somehow use (1x,i5,1x,i5,3x,a100).
+        if isinstance(block, Block) and block.name == "MODSEL":
+            re_modsel = re.compile(r"^\s*(\d+)\s*(\d+)\s*(#.*)?$")
+
+            def reformat(match):
+                # type: (re.Match[str])->str
+                if match.group(3):
+                    return " {:>5} {:>5}   {}".format(*match.groups())
+                else:
+                    return " {:>5} {:>5}   #".format(*match.groups())
+
+            lines = [re_modsel.sub(reformat, i) for i in lines]
+
         # special spacing for MASS block
         if isinstance(block, Block) and block.name == "MASS":
             re_mass = re.compile(r"^\s*(\d+)")
