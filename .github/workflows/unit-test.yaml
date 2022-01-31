@@ -18,6 +18,8 @@ jobs:
       matrix:
         python-version: [ '3.7', '3.10' ]
       fail-fast: false
+    env:
+      PYTHON: ${{ matrix.python-version }}
     name: Test on Python ${{ matrix.python-version }}
     steps:
       - name: Checkout
@@ -38,15 +40,13 @@ jobs:
         id: run
         run: |
           source .venv/bin/activate
-          poetry run pytest --junit-xml=pytest_${{ matrix.python-version }}.xml
+          poetry run pytest --junit-xml=pytest_${{ matrix.python-version }}.xml --cov --cov-report=xml
         continue-on-error: true
       - name: Run coverage
-        if: ${{ steps.run.outcome == 'success' && matrix.python-version == '3.10' }}
-        run: |
-          source .venv/bin/activate
-          coveralls --service=github
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: ${{ steps.run.outcome == 'success' }}
+        uses: codecov/codecov-action@v2
+        with:
+          env_vars: PYTHON
         continue-on-error: true
       - name: Run Type-check
         if: ${{ steps.run.outcome == 'success' && matrix.python-version == '3.10' }}
@@ -73,4 +73,6 @@ jobs:
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1
         with:
-          files: artifacts/**/*.xml
+          files: |
+            artifacts/**/pytest_*.xml
+            artifacts/**/mypy_*.xml
