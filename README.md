@@ -1,5 +1,6 @@
 [![Build Status](https://github.com/misho104/yaslha/actions/workflows/unit-test.yaml/badge.svg?branch=master)](https://github.com/misho104/yaslha/actions/workflows/unit-test.yaml)
 [![Coverage Status](https://codecov.io/gh/misho104/yaslha/branch/master/graph/badge.svg?token=SL19A4WATT)](https://codecov.io/gh/misho104/yaslha)
+[![Typecheck Status](https://github.com/misho104/yaslha/actions/workflows/type-check.yaml/badge.svg?branch=master)](https://github.com/misho104/yaslha/actions/workflows/type-check.yaml)
 [![Doc Status](http://readthedocs.org/projects/yaslha/badge/)](https://yaslha.readthedocs.io/)
 [![PyPI version](https://badge.fury.io/py/yaslha.svg)](https://badge.fury.io/py/yaslha)
 [![License: MIT](https://img.shields.io/badge/License-MIT-ff25d1.svg)](https://github.com/misho104/yaslha/blob/master/LICENSE)
