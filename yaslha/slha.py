@@ -58,11 +58,13 @@ class SLHA:
             return self.blocks[key]
         elif isinstance(key, int):
             return self.decays[key]
-        elif hasattr(key, "__len__") and len(key) >= 2 and isinstance(key[0], str):
-            block = self.blocks[key[0]]
-            return block[key[1] if len(key) == 2 else tuple(key[1:])]
-        else:
-            raise KeyError(key)
+        elif hasattr(key, "__len__"):
+            if len(key) == 1:
+                return self.__getitem__(key[0])
+            elif len(key) >= 2 and isinstance(key[0], str):
+                block = self.blocks[key[0]]
+                return block[key[1] if len(key) == 2 else tuple(key[1:])]
+        raise KeyError(key)
 
     def get(self, *key: Any, default: Any = None) -> Any:
         """Return the value if exists, or default."""
