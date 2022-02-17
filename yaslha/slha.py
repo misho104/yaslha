@@ -2,24 +2,47 @@
 import copy
 import logging
 from collections import OrderedDict
-from typing import Any, List, Tuple, TypeVar, Union
+from typing import Any, Generic, List, Tuple, TypeVar, Union
 
-from yaslha._collections import OrderedCaseInsensitiveDict as CIDict
+from yaslha._collections import OrderedCaseInsensitiveDict
 from yaslha.block import AbsBlock, Block, Decay, InfoBlock
 from yaslha.line import BlockHeadLine, DecayValueType, InfoLine, ValueLine, ValueType
 
 BlockValueLine = Union[ValueLine, InfoLine]
 SLHAItemValueType = Union[Block, Decay, ValueType, DecayValueType]
 T = TypeVar("T")
+TV = TypeVar("TV")
 logger = logging.getLogger(__name__)
+
+
+class BlocksDict(OrderedCaseInsensitiveDict[str, Union[Block, InfoBlock]]):
+    def __setitem__(self, key: str, value: Union[Block, InfoBlock]) -> None:
+        if value.head.name.upper() != key.upper():
+            logger.error(
+                "Inconsistent SLHA key: Block %s set to the key %s",
+                value.head.name.upper(),
+                key.upper(),
+            )
+            exit(1)
+        super().__setitem__(key, value)
+
+
+class DecaysDict(OrderedDict, Generic[T, TV]):  # type: ignore
+    def __setitem__(self, key: int, value: Decay) -> None:
+        if value.head.pid != key:
+            logger.error(
+                "Inconsistent SLHA key: Decay %d set to the key %d", value.head.pid, key
+            )
+            exit(1)
+        super().__setitem__(key, value)
 
 
 class SLHA:
     """SLHA object, representing a SLHA-format text."""
 
     def __init__(self) -> None:
-        self.blocks = CIDict()  # type: CIDict[str, Union[Block, InfoBlock]]
-        self.decays = OrderedDict()  # type: OrderedDict[int, Decay]
+        self.blocks = BlocksDict()  # type: BlocksDict
+        self.decays = DecaysDict()  # type: DecaysDict[int, Decay]
         self.tail_comment = []  # type: List[str]
 
     def add_block(self, obj: Union["Block", "InfoBlock", "Decay"]) -> None:
