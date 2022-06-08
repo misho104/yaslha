@@ -2,7 +2,7 @@
 import copy
 import logging
 from collections import OrderedDict
-from typing import Any, Generic, List, Tuple, TypeVar, Union
+from typing import Any, List, Tuple, Union
 
 from yaslha._collections import OrderedCaseInsensitiveDict
 from yaslha.block import AbsBlock, Block, Decay, InfoBlock
@@ -10,8 +10,6 @@ from yaslha.line import BlockHeadLine, DecayValueType, InfoLine, ValueLine, Valu
 
 BlockValueLine = Union[ValueLine, InfoLine]
 SLHAItemValueType = Union[Block, Decay, ValueType, DecayValueType]
-T = TypeVar("T")
-TV = TypeVar("TV")
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +25,7 @@ class BlocksDict(OrderedCaseInsensitiveDict[str, Union[Block, InfoBlock]]):
         super().__setitem__(key, value)
 
 
-class DecaysDict(OrderedDict, Generic[T, TV]):  # type: ignore
+class DecaysDict(OrderedDict[int, Decay]):
     def __setitem__(self, key: int, value: Decay) -> None:
         if value.head.pid != key:
             logger.error(
@@ -36,13 +34,16 @@ class DecaysDict(OrderedDict, Generic[T, TV]):  # type: ignore
             exit(1)
         super().__setitem__(key, value)
 
+    def __getitem__(self, key: int) -> Decay:
+        return super().__getitem__(key)
+
 
 class SLHA:
     """SLHA object, representing a SLHA-format text."""
 
     def __init__(self) -> None:
         self.blocks = BlocksDict()  # type: BlocksDict
-        self.decays = DecaysDict()  # type: DecaysDict[int, Decay]
+        self.decays = DecaysDict()  # type: DecaysDict
         self.tail_comment = []  # type: List[str]
 
     def add_block(self, obj: Union["Block", "InfoBlock", "Decay"]) -> None:

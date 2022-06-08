@@ -8,8 +8,8 @@ from typing_extensions import Literal
 from yaslha._line import format_comment
 
 if TYPE_CHECKING:
+    from yaslha._line import DecayKeyType, InfoKeyType, KeyType  # noqa: F401
     from yaslha.block import GenericBlock
-    from yaslha._line import DecayKeyType, KeyType, InfoKeyType  # noqa: F401
 
 KTG = TypeVar("KTG", "KeyType", "InfoKeyType", "DecayKeyType")
 CT = TypeVar("CT", str, List[str])
