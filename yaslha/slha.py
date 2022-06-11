@@ -3,6 +3,7 @@ import copy
 import logging
 from collections import OrderedDict
 from typing import Any, List, Tuple, Union
+from typing import OrderedDict as TypingOrderedDict
 
 from yaslha._collections import OrderedCaseInsensitiveDict
 from yaslha.block import AbsBlock, Block, Decay, InfoBlock
@@ -25,7 +26,7 @@ class BlocksDict(OrderedCaseInsensitiveDict[str, Union[Block, InfoBlock]]):
         super().__setitem__(key, value)
 
 
-class DecaysDict(OrderedDict[int, Decay]):
+class DecaysDict(TypingOrderedDict[int, Decay]):
     def __setitem__(self, key: int, value: Decay) -> None:
         if value.head.pid != key:
             logger.error(
