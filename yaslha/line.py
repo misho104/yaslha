@@ -174,6 +174,8 @@ class AbsLine(metaclass=ABCMeta):
         # type: (LineOutputOption, float, bool)->str
         if isinstance(v, int) and allow_int:
             return str(v)
+        if v == 0:
+            v = 0.0  # to avoid "-0.0"
         f = "{:16.8e}" if opt.float_lower else "{:16.8E}"
         return f.format(v)
 
