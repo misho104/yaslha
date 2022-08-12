@@ -12,7 +12,7 @@ import yaslha.parser
 import yaslha.slha
 
 __pkgname__ = "yaslha"
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 __author__ = "Sho Iwamoto / Misho"
 __license__ = "MIT"
 

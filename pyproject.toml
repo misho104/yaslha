@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yaslha"
-version = "0.3.3"
+version = "0.3.4"
 description = "A Python package to handle SLHA (SUSY Les Houches Accord) files."
 authors = ["Sho Iwamoto (Misho) <webmaster@misho-web.com>"]
 license = "MIT"
@@ -14,19 +14,19 @@ click = "^8.1"
 colorama = "^0.4.4"
 coloredlogs = "^15.0"
 typing-extensions = "^4.0"
-numpy = "^1.22"
+numpy = "^1.23"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1"
 pytest-cov = "^3.0"
 mypy = "^0.961"
-flake8 = "^4.0"
+flake8 = "^5.0"
 flake8-builtins = "^1.5"
 flake8-commas = "^2.1"
 flake8-comprehensions = "^3.10"
 flake8-docstrings = "^1.6"
 flake8-isort = "^4.1"
-flake8-logging-format = "^0.6.0"
+flake8-logging-format = "^0.7.0"
 pep8-naming = "^0.13"
 
 [tool.poetry.scripts]
