@@ -86,6 +86,8 @@ def number_to_str(v: float, int_format: str = "d", float_format: str = "16.8e") 
     if isinstance(v, int):
         return ("{:" + int_format + "}").format(v)
     elif isinstance(v, float):
+        if v == 0:
+            v = 0.0  # convert -0.0 to +0.0
         return ("{:" + float_format + "}").format(v)
     else:
         raise TypeError(v)
